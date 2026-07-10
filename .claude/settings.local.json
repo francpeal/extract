@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --list-sdks)",
+      "Bash(dotnet --list-runtimes)",
+      "Bash(rm -rf /tmp/wbtest)",
+      "Bash(mkdir -p /tmp/wbtest)",
+      "Bash(cp \"D:/Desarrollo/extract/WinBridgeApi/Program.cs\" \"D:/Desarrollo/extract/WinBridgeApi/appsettings.json\" \"D:/Desarrollo/extract/WinBridgeApi/appsettings.Development.json\" /tmp/wbtest/)",
+      "Bash(sed 's/net8.0/net10.0/' \"D:/Desarrollo/extract/WinBridgeApi/WinBridgeApi.csproj\")",
+      "Bash(pkill -f \"WinBridgeApi.dll\")",
+      "Bash(sed 's/net8.0/net10.0/; /<InvariantGlobalization>/d' \"D:/Desarrollo/extract/WinBridgeApi/WinBridgeApi.csproj\")",
+      "Bash(taskkill //F //IM WinBridgeApi.exe)",
+      "Bash(dotnet build *)"
+    ]
+  }
+}
