@@ -39,10 +39,10 @@ run.bat
 o manualmente:
 
 ```
-dotnet run --urls "http://0.0.0.0:5000"
+dotnet run --urls "http://127.0.0.1:5000"
 ```
 
-Nota: `Program.cs` ya fija Kestrel a `http://0.0.0.0:5000` mediante
+Nota: `Program.cs` ya fija Kestrel a loopback (`http://localhost:5000`) mediante
 `ConfigureKestrel`, por lo que el flag `--urls` es redundante (queda como
 red de seguridad / documentación), la app siempre escuchará ahí.
 
@@ -79,9 +79,10 @@ cd D:\Apps\WinBridgeApi
 
 El script:
 - Verifica que se ejecuta como Administrador.
-- Localiza `dotnet.exe`.
 - Crea el servicio `WinBridgeApi` (DisplayName "Windows Bridge API"),
-  `start= auto`, ejecutando `dotnet.exe publish\WinBridgeApi.dll`.
+  `start= auto`, ejecutando `publish\WinBridgeApi.exe`.
+- La aplicación detecta al Service Control Manager mediante `AddWindowsService`
+  y utiliza el ciclo de vida nativo de un servicio Windows.
 - Configura reinicio automático ante caídas (3 intentos, 60s de espera).
 - Inicia el servicio.
 
@@ -92,31 +93,24 @@ sc.exe query WinBridgeApi
 curl http://127.0.0.1:5000/health
 ```
 
-Parámetros opcionales del script si tu layout difiere:
+Parámetro opcional si tu layout difiere:
 
 ```
-.\install-service.ps1 -PublishDir "D:\Apps\WinBridgeApi\publish" -DotnetPath "C:\Program Files\dotnet\dotnet.exe"
+.\install-service.ps1 -PublishDir "D:\Apps\WinBridgeApi\publish"
 ```
 
-## 6. Firewall — importante
+## 6. Exposición de red y firewall
 
-La API escucha en `0.0.0.0:5000` **sin autenticación**, confiando en que el
-único camino de entrada es el túnel SSH. Para que esa suposición sea cierta
-en la práctica:
+La API escucha únicamente en loopback (`127.0.0.1`/`::1`) y no tiene
+autenticación propia. El túnel SSH debe reenviar hacia `127.0.0.1:5000` en el
+servidor Windows.
 
-- Restringe el Firewall de Windows para que el puerto 5000/TCP **no** sea
-  alcanzable desde la red externa, solo desde `127.0.0.1` (o desde donde
-  termine el túnel SSH localmente).
-- Si el túnel SSH reenvía a `127.0.0.1:5000` en el propio servidor, no
-  necesitas abrir el puerto 5000 a otras interfaces en absoluto — bloquéalo
-  explícitamente con una regla de entrada.
+No abras el puerto 5000 en el Firewall de Windows. El binding de Kestrel impide
+que la API acepte conexiones dirigidas a las interfaces de red del servidor; el
+firewall permanece como control complementario.
 
-Ejemplo de regla restrictiva (ajusta según tu topología real):
-
-```
-netsh advfirewall firewall add rule name="WinBridgeApi-block-external" dir=in protocol=TCP localport=5000 action=block remoteip=any
-netsh advfirewall firewall add rule name="WinBridgeApi-allow-localhost" dir=in protocol=TCP localport=5000 action=allow remoteip=127.0.0.1
-```
+Verifica desde otro equipo de la red que `IP_DEL_SERVIDOR:5000` no responde y,
+desde el servidor Windows, que `http://127.0.0.1:5000/health` sí responde.
 
 ## 7. Recordatorio sobre `/query`
 
@@ -133,6 +127,8 @@ sc.exe start WinBridgeApi
 sc.exe delete WinBridgeApi
 ```
 
-Logs: al correr como servicio, la salida de consola no se ve interactivamente.
-Para depurar, detén el servicio y ejecuta `dotnet publish\WinBridgeApi.dll`
-manualmente en una consola para ver los logs con timestamp en vivo.
+Logs: al correr como servicio, revisa el Visor de eventos de Windows, en
+`Registros de Windows > Aplicación`, y filtra por el origen `WinBridgeApi`.
+Para depurar interactivamente, detén el servicio y ejecuta
+`dotnet publish\WinBridgeApi.dll` en una consola para ver también los logs con
+timestamp en vivo.

@@ -1,0 +1,15 @@
+# .NET build output
+**/bin/
+**/obj/
+**/publish/
+**/.publish-test/
+
+# Local IDE state
+.vs/
+*.user
+*.suo
+
+# Machine-specific secrets and overrides
+.env
+.env.*
+WinBridgeApi/appsettings.Production.json

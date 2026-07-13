@@ -1,4 +1,9 @@
 using Microsoft.Data.SqlClient;
+using Microsoft.AspNetCore.Http.Timeouts;
+using System.Text.Json;
+
+const int CommandTimeoutSeconds = 25;
+const int RequestTimeoutSeconds = 30;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,21 +15,27 @@ builder.Logging.AddSimpleConsole(options =>
     options.SingleLine = true;
 });
 
-// --- Kestrel: HTTP only, fixed address/port. No HTTPS, no HSTS. ---
+// Uses WindowsServiceLifetime and Event Log only when launched by the Service
+// Control Manager. Console execution remains available for diagnostics.
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "WinBridgeApi";
+});
+builder.Services.AddRequestTimeouts();
+
+// --- Kestrel: HTTP only on loopback. SSH is the only remote entry point. ---
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5000); // http://0.0.0.0:5000
+    options.ListenLocalhost(5000);
 });
 
 var app = builder.Build();
+app.UseRequestTimeouts();
 
 var connectionString = app.Configuration.GetConnectionString("SqlServer")
     ?? throw new InvalidOperationException("Connection string 'SqlServer' is not configured in appsettings.json.");
 
 var logger = app.Logger;
-
-const int CommandTimeoutSeconds = 25; // leaves headroom under the 30s request budget
-const int RequestTimeoutSeconds = 30;
 
 // Intentionally no UseHttpsRedirection() and no UseHsts(): plain HTTP only,
 // TLS is terminated by the external SSH tunnel.
@@ -47,8 +58,11 @@ app.MapGet("/query", async (string? sql, HttpContext ctx) =>
         return Results.BadRequest(new { error = "Missing 'sql' query parameter." });
     }
 
-    return await ExecuteQueryAsync(sql, null, connectionString, logger, ctx.RequestAborted);
-});
+    var requestTimeout = ctx.Features.Get<IHttpRequestTimeoutFeature>()?.RequestTimeoutToken
+        ?? CancellationToken.None;
+    return await ExecuteQueryAsync(
+        sql, null, connectionString, logger, ctx.RequestAborted, requestTimeout);
+}).WithRequestTimeout(TimeSpan.FromSeconds(RequestTimeoutSeconds));
 
 app.MapPost("/query", async (QueryRequest? request, HttpContext ctx) =>
 {
@@ -57,45 +71,57 @@ app.MapPost("/query", async (QueryRequest? request, HttpContext ctx) =>
         return Results.BadRequest(new { error = "Missing 'sql' field in request body." });
     }
 
-    return await ExecuteQueryAsync(request.Sql, request.Params, connectionString, logger, ctx.RequestAborted);
-});
+    var requestTimeout = ctx.Features.Get<IHttpRequestTimeoutFeature>()?.RequestTimeoutToken
+        ?? CancellationToken.None;
+    return await ExecuteQueryAsync(
+        request.Sql, request.Params, connectionString, logger, ctx.RequestAborted, requestTimeout);
+}).WithRequestTimeout(TimeSpan.FromSeconds(RequestTimeoutSeconds));
 
-logger.LogInformation("WinBridgeApi starting on http://0.0.0.0:5000");
+logger.LogInformation("WinBridgeApi starting on http://localhost:5000");
 
 app.Run();
 
 static async Task<IResult> ExecuteQueryAsync(
     string sql,
-    Dictionary<string, object?>? parameters,
+    Dictionary<string, JsonElement>? parameters,
     string connectionString,
     ILogger logger,
-    CancellationToken requestAborted)
+    CancellationToken requestAborted,
+    CancellationToken requestTimeout)
 {
-    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(requestAborted);
-    timeoutCts.CancelAfter(TimeSpan.FromSeconds(RequestTimeoutSeconds));
-
     try
     {
-        logger.LogInformation("Executing query: {Sql}", sql);
+        logger.LogInformation("Executing SQL query ({Length} characters).", sql.Length);
+
+        var normalizedParameters = new List<KeyValuePair<string, object>>();
+        if (parameters is not null)
+        {
+            foreach (var (key, value) in parameters)
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    throw new ArgumentException("Query parameter names cannot be empty.");
+                }
+
+                var paramName = key.StartsWith('@') ? key : $"@{key}";
+                normalizedParameters.Add(new(paramName, ConvertJsonParameter(value)));
+            }
+        }
 
         await using var connection = new SqlConnection(connectionString);
-        await connection.OpenAsync(timeoutCts.Token);
+        await connection.OpenAsync(requestAborted);
 
         await using var command = new SqlCommand(sql, connection)
         {
             CommandTimeout = CommandTimeoutSeconds
         };
 
-        if (parameters is not null)
+        foreach (var (name, value) in normalizedParameters)
         {
-            foreach (var (key, value) in parameters)
-            {
-                var paramName = key.StartsWith('@') ? key : $"@{key}";
-                command.Parameters.AddWithValue(paramName, value ?? DBNull.Value);
-            }
+            command.Parameters.AddWithValue(name, value);
         }
 
-        await using var reader = await command.ExecuteReaderAsync(timeoutCts.Token);
+        await using var reader = await command.ExecuteReaderAsync(requestAborted);
 
         // Non-query statements (UPDATE/INSERT/DELETE) have no result columns.
         if (reader.FieldCount == 0)
@@ -113,7 +139,7 @@ static async Task<IResult> ExecuteQueryAsync(
 
         var results = new List<Dictionary<string, object?>>();
 
-        while (await reader.ReadAsync(timeoutCts.Token))
+        while (await reader.ReadAsync(requestAborted))
         {
             var row = new Dictionary<string, object?>();
             for (var i = 0; i < reader.FieldCount; i++)
@@ -128,6 +154,11 @@ static async Task<IResult> ExecuteQueryAsync(
 
         return Results.Ok(results);
     }
+    catch (OperationCanceledException) when (requestTimeout.IsCancellationRequested)
+    {
+        logger.LogError("Request timed out after {Timeout}s.", RequestTimeoutSeconds);
+        return CreateTimeoutResult();
+    }
     catch (OperationCanceledException) when (requestAborted.IsCancellationRequested)
     {
         logger.LogWarning("Request was aborted by the client.");
@@ -135,10 +166,18 @@ static async Task<IResult> ExecuteQueryAsync(
     }
     catch (OperationCanceledException)
     {
-        logger.LogError("Query timed out after {Timeout}s.", RequestTimeoutSeconds);
-        return Results.Json(
-            new { error = $"Query timed out after {RequestTimeoutSeconds} seconds." },
-            statusCode: StatusCodes.Status504GatewayTimeout);
+        logger.LogError("Query operation was canceled.");
+        return CreateTimeoutResult();
+    }
+    catch (ArgumentException ex)
+    {
+        logger.LogWarning(ex, "Invalid query parameter.");
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (SqlException ex) when (ex.Number == -2)
+    {
+        logger.LogError(ex, "SQL command timed out after {Timeout}s.", CommandTimeoutSeconds);
+        return CreateTimeoutResult();
     }
     catch (SqlException ex)
     {
@@ -152,4 +191,29 @@ static async Task<IResult> ExecuteQueryAsync(
     }
 }
 
-record QueryRequest(string Sql, Dictionary<string, object?>? Params);
+static IResult CreateTimeoutResult()
+{
+    return Results.Json(
+        new { error = $"Request timed out after {RequestTimeoutSeconds} seconds." },
+        statusCode: StatusCodes.Status504GatewayTimeout);
+}
+
+static object ConvertJsonParameter(JsonElement value)
+{
+    return value.ValueKind switch
+    {
+        JsonValueKind.Null or JsonValueKind.Undefined => DBNull.Value,
+        JsonValueKind.String => value.GetString() is { } stringValue ? stringValue : DBNull.Value,
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        JsonValueKind.Number when value.TryGetInt32(out var intValue) => intValue,
+        JsonValueKind.Number when value.TryGetInt64(out var longValue) => longValue,
+        JsonValueKind.Number when value.TryGetDecimal(out var decimalValue) => decimalValue,
+        JsonValueKind.Number when value.TryGetDouble(out var doubleValue) => doubleValue,
+        JsonValueKind.Number => throw new ArgumentException("Numeric parameter is outside the supported range."),
+        _ => throw new ArgumentException(
+            "Query parameters must be scalar JSON values: string, number, boolean, or null.")
+    };
+}
+
+record QueryRequest(string Sql, Dictionary<string, JsonElement>? Params);
