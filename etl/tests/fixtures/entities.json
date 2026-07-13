@@ -1,0 +1,62 @@
+{
+  "articles": {
+    "articleCode": "ART-001",
+    "description": "Artículo de prueba",
+    "commercialDescription": null,
+    "category": "01",
+    "imageUrl": null,
+    "active": true,
+    "brand": "MARCA",
+    "alternateCode": "ALT-001",
+    "sourceUpdatedAt": "2026-07-13T12:00:00Z"
+  },
+  "customers": {
+    "name": "Cliente de prueba",
+    "legalName": "Cliente de prueba S.A.C.",
+    "taxId": "20000000001",
+    "active": true,
+    "dapCode": "CLI-001",
+    "email": "cliente@example.invalid",
+    "phone": null,
+    "mobile": null,
+    "representative": null,
+    "assignedSellerCode": "V001",
+    "sourceUpdatedAt": "2026-07-13T12:00:00Z"
+  },
+  "warehouses": {
+    "warehouseCode": "001",
+    "name": "ALMACÉN DE PRUEBA",
+    "abbreviation": "ALM1",
+    "active": true,
+    "sourceUpdatedAt": "2026-07-13T12:00:00Z"
+  },
+  "price-lists": {
+    "priceListCode": "001",
+    "name": "LISTA DE PRUEBA",
+    "active": true,
+    "sourceUpdatedAt": "2026-07-13T12:00:00Z"
+  },
+  "prices": {
+    "articleCode": "ART-001",
+    "priceListCode": "001",
+    "priceUsd": 12.34,
+    "pricePen": 45.67,
+    "minimumUsd": null,
+    "minimumPen": null,
+    "maximumUsd": null,
+    "maximumPen": null,
+    "discount1": 0.00,
+    "discount2": null,
+    "discount3": null,
+    "sourceUpdatedAt": "2026-07-13T12:00:00Z"
+  },
+  "warehouse-stock": {
+    "articleCode": "ART-001",
+    "warehouseCode": "001",
+    "openingStock": 10.00,
+    "incomingStock": 2.00,
+    "outgoingStock": 1.00,
+    "currentStock": 11.00,
+    "sourceUpdatedAt": "2026-07-13T12:00:00Z"
+  }
+}

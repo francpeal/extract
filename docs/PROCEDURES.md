@@ -368,3 +368,20 @@ un plan de rollback; no debe improvisarse durante una migración urgente.
 - Después de actualizar WinBridgeApi: validar servicio Windows, túnel y contrato.
 - En una ventana de mantenimiento: reiniciar ambos servidores y confirmar que los
   servicios se recuperan sin intervención manual.
+
+## Operación futura del ETL
+
+La base del sincronizador y las plantillas systemd se documentan en
+[`etl/README.md`](../etl/README.md). No habilitar `sico-etl.timer` mientras
+`docs/ETL_MAPPINGS.md` mantenga claves o mappings pendientes y los contratos
+correspondientes tengan `mapping_confirmed=false`.
+
+La secuencia de aceptación es:
+
+1. Aplicar migraciones de control en un entorno PostgreSQL aislado.
+2. Ejecutar las seis entidades con `--dry-run`.
+3. Comparar muestras contra SICO y revisar métricas de volumen.
+4. Habilitar y probar una entidad maestra pequeña.
+5. Ejecutar un snapshot completo sin timer.
+6. Verificar idempotencia con una segunda ejecución.
+7. Activar el timer solamente después de aprobar rollback y monitoreo.

@@ -45,6 +45,16 @@ La aceptación debe revisarse si ocurre cualquiera de estos cambios:
   externa, variables de entorno o un archivo protegido y no versionado.
 - La cuenta del servicio debe tener permiso de lectura solamente sobre la fuente
   de configuración necesaria.
+- El ETL recibe `WINBRIDGE_BASE_URL` y `POSTGRES_DSN` mediante entorno protegido;
+  `.env.example` contiene únicamente valores ficticios.
+- La URL de WinBridgeApi aceptada por el ETL debe apuntar a loopback. No se permite
+  configurar HTTP directo hacia una interfaz remota.
+- La cuenta PostgreSQL del ETL debe limitarse a las seis tablas de destino y a las
+  tablas de control necesarias. Las migraciones deben ejecutarse con otra cuenta
+  cuando la cuenta operativa no tenga DDL.
+- Correos, teléfonos, cuerpos JSON y filas completas no deben registrarse.
+- El staging PostgreSQL puede contener payload temporal: debe restringirse a la
+  cuenta ETL, marcar vencimiento a las 24 horas y purgarse operativamente.
 
 ## Operación
 
@@ -55,6 +65,9 @@ La aceptación debe revisarse si ocurre cualquiera de estos cambios:
 - Diferenciar proceso vivo de disponibilidad de SQL Server.
 - Definir reintentos en Ubuntu con espera progresiva; la API no debe reintentar
   consultas largas de manera invisible.
+- Usar un advisory lock para impedir ejecuciones ETL solapadas.
+- Abortar la publicación ante claves duplicadas, nulas o reducciones de volumen
+  superiores al umbral aprobado; conservar siempre el último dataset válido.
 
 ## Observación sobre firewall
 

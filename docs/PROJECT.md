@@ -28,9 +28,11 @@ Proveer un canal estable, controlado y observable para extraer datos del ERP sin
 ## Alcance inicial
 
 - Consultar artículos y sus identificadores relevantes.
+- Extraer clientes, almacenes y listas de precios pertinentes para la aplicación.
 - Extraer precios de artículos.
 - Extraer stock por la granularidad que se confirme con el negocio.
 - Transportar los resultados como JSON hacia la aplicación Ubuntu.
+- Sincronizar una proyección de solo lectura en PostgreSQL mediante un ETL Linux.
 - Operar a través del túnel SSH restringido al servidor Ubuntu autorizado.
 - Disponer de diagnóstico de salud y registros operativos suficientes.
 
@@ -68,3 +70,5 @@ Proveer un canal estable, controlado y observable para extraer datos del ERP sin
 - Frecuencia de consulta y volumen aproximado.
 - Extracción completa o incremental y campo confiable para el cursor.
 - Tratamiento de artículos inactivos y valores nulos.
+- Clave canónica y política de datos personales para clientes.
+- Política de ausencia por entidad: conservar, desactivar o eliminar.

@@ -12,4 +12,15 @@
 # Machine-specific secrets and overrides
 .env
 .env.*
+!.env.example
 WinBridgeApi/appsettings.Production.json
+
+# Python
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+etl/dist/
+etl/*.egg-info/

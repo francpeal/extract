@@ -1,0 +1,13 @@
+[Unit]
+Description=Run SICO ETL periodically
+
+[Timer]
+# Intervalo ilustrativo. Debe reemplazarse después de medir volumen y duración.
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Persistent=true
+Unit=sico-etl.service
+
+[Install]
+WantedBy=timers.target

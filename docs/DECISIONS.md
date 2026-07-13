@@ -40,7 +40,7 @@ cambia, se marca como sustituida y se referencia la nueva.
 
 ## ADR-004 — El consumidor orquesta la extracción
 
-- **Estado:** propuesta, pendiente de confirmación
+- **Estado:** sustituida por ADR-007
 - **Fecha:** 2026-07-13
 - **Contexto:** El servidor Ubuntu ya aloja la aplicación consumidora.
 - **Decisión propuesta:** La programación, persistencia, reintentos de alto nivel y
@@ -70,6 +70,52 @@ cambia, se marca como sustituida y se referencia la nueva.
   `AddWindowsService`, conservando la ejecución interactiva para diagnóstico.
 - **Consecuencias:** El mismo build publicado funciona como servicio o en consola
   y resuelve la configuración desde el directorio publicado.
+
+## ADR-007 — PostgreSQL como proyección local orquestada desde Linux
+
+- **Estado:** aceptada
+- **Fecha:** 2026-07-13
+- **Contexto:** La aplicación comercial prioriza agilidad y no debe acoplar cada
+  lectura a la disponibilidad y latencia de SICO, Windows y el túnel.
+- **Decisión:** Un ETL independiente en Linux consume WinBridgeApi y sincroniza las
+  seis entidades pertinentes hacia PostgreSQL. SICO permanece como fuente de
+  verdad y WinBridgeApi permanece sin estado.
+- **Consecuencias:** La aplicación lee localmente y tolera caídas temporales del
+  origen. Se incorpora operación, monitoreo y almacenamiento de una proyección.
+
+## ADR-008 — Publicación idempotente con mappings protegidos
+
+- **Estado:** aceptada
+- **Fecha:** 2026-07-13
+- **Contexto:** Las capturas de PostgreSQL sugieren claves naturales, pero no
+  prueban constraints ni identifican las claves y reglas internas de SICO.
+- **Decisión:** Mantener todos los mappings con `mapping_confirmed=false` y
+  bloquear escrituras hasta completar el relevamiento. Una vez confirmados, el
+  ETL preservará IDs locales y hará upsert transaccional por clave natural.
+- **Consecuencias:** Es posible desarrollar y probar extracción y validación sin
+  arriesgar datos. La primera carga productiva requiere una aprobación explícita.
+
+## ADR-009 — Snapshot conservador antes que incremental no demostrado
+
+- **Estado:** aceptada para la primera puesta en marcha
+- **Fecha:** 2026-07-13
+- **Contexto:** No se confirmó una marca estable de modificación en SICO.
+- **Decisión:** Preparar snapshots paginados con límites y controles de volumen.
+  `updatedSince` permanece deshabilitado por entidad hasta demostrar un cursor
+  confiable. La ausencia de una fila no provoca borrado ni desactivación.
+- **Consecuencias:** Se favorece consistencia y recuperación a costa de releer más
+  datos. La estrategia podrá evolucionar por entidad con mediciones reales.
+
+## ADR-010 — ETL Python independiente y operado por systemd
+
+- **Estado:** aceptada
+- **Fecha:** 2026-07-13
+- **Contexto:** La orquestación, PostgreSQL y el túnel residen en Linux; no deben
+  incorporarse al ciclo de vida de la aplicación web ni de WinBridgeApi.
+- **Decisión:** Implementar `etl/` como paquete Python 3.11+ con CLI, configuración
+  por entorno y plantillas `systemd` de tipo oneshot/timer.
+- **Consecuencias:** Despliegue y rollback independientes. Python y psycopg pasan a
+  ser dependencias operativas del sincronizador Linux.
 
 ## Plantilla
 

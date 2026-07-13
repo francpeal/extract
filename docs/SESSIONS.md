@@ -50,6 +50,8 @@ Informar:
 | Tarea completada, bloqueo o siguiente hito | `ROADMAP.md` |
 | Procedimiento de instalación | `WinBridgeApi/DEPLOY.md` |
 | Operación o migración del servidor Linux | `PROCEDURES.md` |
+| Mapping SICO, DTO o destino PostgreSQL | `ETL_MAPPINGS.md` |
+| Operación interna del sincronizador | `etl/README.md` |
 
 ## Criterio de información
 
