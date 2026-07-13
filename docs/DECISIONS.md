@@ -95,12 +95,14 @@ cambia, se marca como sustituida y se referencia la nueva.
 - **Consecuencias:** Es posible desarrollar y probar extracción y validación sin
   arriesgar datos. La primera carga productiva requiere una aprobación explícita.
 
-## ADR-009 — Snapshot conservador antes que incremental no demostrado
+## ADR-009 — Snapshot conservador sin marca de modificación
 
 - **Estado:** aceptada para la primera puesta en marcha
 - **Fecha:** 2026-07-13
-- **Contexto:** No se confirmó una marca estable de modificación en SICO.
-- **Decisión:** Preparar snapshots paginados con límites y controles de volumen.
+- **Contexto:** El propietario de las consultas no identifica una marca estable de
+  modificación en las tablas SICO; las consultas confirmadas de las seis entidades
+  devuelven `updated_at` nulo.
+- **Decisión:** Preparar snapshots completos paginados con límites y controles de volumen.
   `updatedSince` permanece deshabilitado por entidad hasta demostrar un cursor
   confiable. La ausencia de una fila no provoca borrado ni desactivación.
 - **Consecuencias:** Se favorece consistencia y recuperación a costa de releer más
@@ -116,6 +118,30 @@ cambia, se marca como sustituida y se referencia la nueva.
   por entorno y plantillas `systemd` de tipo oneshot/timer.
 - **Consecuencias:** Despliegue y rollback independientes. Python y psycopg pasan a
   ser dependencias operativas del sincronizador Linux.
+
+## ADR-011 — Normalización de fechas SICO desde hora Lima
+
+- **Estado:** aceptada
+- **Fecha:** 2026-07-13
+- **Contexto:** SQL Server y Linux operan en GMT−5, hora de Lima. `m_client.ing_cli`
+  no incluye desplazamiento, pero representa esa hora local.
+- **Decisión:** Interpretar `ing_cli` con offset UTC−05:00 en WinBridgeApi y emitir
+  `sourceCreatedAt` normalizado a UTC. No usar la zona configurada dinámicamente
+  en el proceso para evitar resultados distintos entre servidores.
+- **Consecuencias:** PostgreSQL recibe instantes inequívocos. Si la semántica del
+  dato histórico fuera distinta, deberá sustituirse esta decisión y reprocesarse.
+
+## ADR-012 — Propiedad local de campos enriquecidos de artículos
+
+- **Estado:** aceptada
+- **Fecha:** 2026-07-13
+- **Contexto:** La aplicación web administra `descripcion_comercial`, `categoria`
+  e `imagen_url`; SICO no debe sobrescribir ese enriquecimiento local.
+- **Decisión:** Excluir esos campos del DTO de extracción y del mapping de escritura
+  del ETL. SICO es propietario solamente de código, descripción, activo, marca y
+  código alterno dentro de la tabla `articulos`.
+- **Consecuencias:** Los upserts preservan los campos locales incluso en snapshots
+  completos. Cambiar su propiedad requerirá un nuevo contrato y una ADR.
 
 ## Plantilla
 

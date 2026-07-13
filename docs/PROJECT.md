@@ -50,7 +50,8 @@ Proveer un canal estable, controlado y observable para extraer datos del ERP sin
 - Sin autorización para modificar el servidor de base de datos o el ERP.
 - La API debe ejecutarse en la infraestructura disponible del cliente.
 - El transporte entre Ubuntu y el cliente depende del túnel SSH.
-- Los nombres de tablas, vistas y reglas de precios/stock aún no están documentados.
+- Los objetos y columnas de extracción están documentados; las reglas funcionales
+  de precios y stock aún requieren validación.
 
 ## Criterios de éxito del primer hito
 

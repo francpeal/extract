@@ -3,8 +3,9 @@
 ## Estado
 
 Este documento separa el contrato actual de diagnóstico del contrato objetivo del
-ETL. Los seis endpoints de extracción todavía no están implementados: sus campos
-son preliminares hasta confirmar el mapping de SICO según `docs/ETL_MAPPINGS.md`.
+ETL. Los seis endpoints específicos están implementados como pilotos y pendientes
+de validación con datos reales. La publicación PostgreSQL permanece bloqueada
+según `docs/ETL_MAPPINGS.md`.
 
 ## Contrato actual de diagnóstico
 
@@ -37,12 +38,12 @@ los endpoints específicos y el relevamiento estén completos.
 
 Endpoints:
 
-- `GET /api/v1/extract/articles`
-- `GET /api/v1/extract/customers`
-- `GET /api/v1/extract/warehouses`
-- `GET /api/v1/extract/price-lists`
-- `GET /api/v1/extract/prices`
-- `GET /api/v1/extract/warehouse-stock`
+- `GET /api/v1/extract/articles` — implementado, pendiente de validación real
+- `GET /api/v1/extract/customers` — implementado, pendiente de validación real
+- `GET /api/v1/extract/warehouses` — implementado, pendiente de validación real
+- `GET /api/v1/extract/price-lists` — implementado, pendiente de validación real
+- `GET /api/v1/extract/prices` — implementado, pendiente de validación real
+- `GET /api/v1/extract/warehouse-stock` — implementado, pendiente de validación real
 
 Parámetros comunes:
 
@@ -84,9 +85,6 @@ Reglas:
     {
       "articleCode": "ART-001",
       "description": "Artículo de prueba",
-      "commercialDescription": null,
-      "category": "01",
-      "imageUrl": null,
       "active": true,
       "brand": "MARCA",
       "alternateCode": "ALT-001",
@@ -98,8 +96,14 @@ Reglas:
 }
 ```
 
-`articleCode` y `active` son obligatorios. La propiedad y origen de `imageUrl`, el
-significado de categoría y la regla de activo siguen pendientes.
+`articleCode` y `active` son obligatorios. La consulta confirmada usa
+`VW_Articulo.ArtCod` como clave primaria, `ArtNombre` como descripción,
+`ArtLineaDesc` para derivar marca y `ArtCodInt` como código alterno. `active` es
+siempre verdadero y `sourceUpdatedAt` siempre nulo.
+
+`commercialDescription`, `category` e `imageUrl` no forman parte del DTO: son
+propiedad de la aplicación web y el ETL no debe insertarlos ni actualizarlos. Una
+ausencia en el snapshot tampoco desactiva automáticamente el artículo.
 
 ### Clientes
 
@@ -111,13 +115,13 @@ significado de categoría y la regla de activo siguen pendientes.
       "legalName": "Cliente de prueba S.A.C.",
       "taxId": "20000000001",
       "active": true,
-      "dapCode": "CLI-001",
+      "customerCode": "CLI-001",
       "email": "cliente@example.invalid",
       "phone": null,
       "mobile": null,
       "representative": null,
       "assignedSellerCode": "V001",
-      "sourceCreatedAt": null,
+      "sourceCreatedAt": "2026-07-13T17:00:00Z",
       "sourceUpdatedAt": null
     }
   ],
@@ -126,8 +130,25 @@ significado de categoría y la regla de activo siguen pendientes.
 }
 ```
 
-`name`, `legalName`, `taxId` y `active` son obligatorios según el destino actual.
-Debe decidirse si `dapCode`, `taxId` u otra combinación identifica al cliente.
+`customerCode`, `name`, `legalName`, `taxId` y `active` son obligatorios. El
+endpoint valida que `ruc_cli`, origen de `customerCode`, sea no nulo y único antes
+de permitir la paginación. Falta confirmar que PostgreSQL tenga una restricción
+única equivalente sobre `cod_dap`.
+
+La consulta proporcionada define:
+
+- `ruc_cli → customerCode → cod_dap`;
+- `des_cli → name` y `legalName`;
+- `cdg_alt → taxId → ruc`;
+- `CONVERT(bit, 1) → active`, por lo que todos los clientes extraídos están activos;
+- `EMA_CLI`, `TEL_CLI`, `FAX_CLI`, `REP_CLI` y `CDG_VEND` para los campos de contacto;
+- `sourceUpdatedAt = null` porque SICO no expone fecha de modificación.
+
+`ing_cli` se interpreta como hora de Lima (UTC−05:00), según confirmación del
+propietario, y se normaliza a UTC en `sourceCreatedAt`. `ruc_cli` es la clave
+primaria del origen. `cdg_alt`/RUC no participa en el cursor ni en el upsert: puede
+contener duplicados por problemas de calidad, aunque funcionalmente debería ser
+único.
 
 ### Almacenes
 
@@ -147,8 +168,12 @@ Debe decidirse si `dapCode`, `taxId` u otra combinación identifica al cliente.
 }
 ```
 
-Código, nombre y estado son obligatorios en el contrato preliminar. Longitudes,
-almacenes incluidos y semántica del estado están pendientes.
+Código, nombre y estado son obligatorios. La consulta confirmada usa `D_TABLAS`
+con `CDG_TAB = 'ARE'`, toma `NUM_ITEM` como clave primaria, `DES_ITEM` como nombre
+y `ABR_ITEM` como abreviatura. `active` es siempre verdadero y
+`sourceUpdatedAt` siempre nulo. La ausencia en un snapshot no desactiva el almacén.
+El código se limita a 10 caracteres para ser compatible con
+`stock_almacen.cod_almacen`.
 
 ### Listas de precios
 
@@ -168,8 +193,11 @@ almacenes incluidos y semántica del estado están pendientes.
 ```
 
 Debe confirmarse qué listas consume la aplicación y cómo se representa su
-vigencia. El consumidor no puede solicitar listas arbitrarias hasta aprobar esa
-regla.
+vigencia. La consulta confirmada usa `D_TABLAS` con `CDG_TAB = 'PRC'`, toma
+`NUM_ITEM` como clave primaria y `des_item` como nombre. `active` es siempre
+verdadero y `sourceUpdatedAt` siempre nulo; la ausencia de una lista en un snapshot
+no provoca desactivación automática. El código se limita a tres caracteres para
+ser compatible con `precios.cod_lista`.
 
 ### Precios
 
@@ -196,9 +224,17 @@ regla.
 }
 ```
 
-Artículo, lista y ambos precios son obligatorios por el esquema PostgreSQL
-observado. Moneda, impuestos, vigencia, mínimos, máximos y composición de
-descuentos deben validarse funcionalmente antes de implementar la consulta SICO.
+La consulta confirmada usa `M_PRECIO` y la clave primaria compuesta
+`(CDG_PROD, CDG_LPRC)`, expuesta como `(articleCode, priceListCode)`. El endpoint
+valida que el par sea no nulo, único y compatible con los límites de 20 y 3
+caracteres del destino. Artículo, lista, `PRE_DOL` y `PRE_SOL` son obligatorios;
+los mínimos, máximos y descuentos admiten nulo. Los valores se transfieren sin
+recalcularlos ni interpretar reglas comerciales.
+
+Como el origen no aporta fecha de modificación, `sourceUpdatedAt` es nulo y el
+endpoint rechaza `updatedSince`: la extracción es un snapshot completo paginado
+por la clave compuesta. Moneda, impuestos, vigencia y composición de descuentos
+aún deben validarse funcionalmente antes de habilitar la publicación.
 
 ### Stock por almacén
 
@@ -220,8 +256,16 @@ descuentos deben validarse funcionalmente antes de implementar la consulta SICO.
 }
 ```
 
-Artículo y almacén son obligatorios. Deben confirmarse el periodo de acumulación
-y si `currentStock` significa físico, disponible u otra cantidad. No se agregan
+La consulta confirmada usa `M_STOCK` y la clave primaria compuesta
+`(CDG_PROD, CDG_AREA)`, expuesta como `(articleCode, warehouseCode)`. El endpoint
+valida que el par sea no nulo, único y compatible con los límites de 20 y 10
+caracteres del destino. `STK_INIC`, `STK_ING`, `STK_SAL` y `STK_ACT` admiten nulo
+y se transfieren sin recalcularlos.
+
+Como el origen no aporta fecha de modificación, `sourceUpdatedAt` es nulo y el
+endpoint rechaza `updatedSince`: la extracción es un snapshot completo paginado
+por la clave compuesta. Aún deben confirmarse el periodo de acumulación y si
+`STK_ACT` representa stock físico, disponible u otra cantidad. No se agregan
 campos `available` o `committed` sin evidencia.
 
 ## Errores

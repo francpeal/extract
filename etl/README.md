@@ -6,14 +6,14 @@ proyectarlos en PostgreSQL. SICO continúa siendo la fuente de verdad.
 ## Estado de seguridad
 
 La extracción y validación en modo `--dry-run` están implementadas. La publicación
-se bloquea deliberadamente porque los mappings SICO y las restricciones naturales
-de PostgreSQL todavía no fueron confirmados. Cada contrato mantiene
-`mapping_confirmed=False`; cambiarlo requiere evidencia, pruebas y una decisión
-documentada.
+se bloquea deliberadamente porque, aunque los mappings de origen están
+documentados, las restricciones naturales de PostgreSQL y la validación funcional
+todavía no fueron confirmadas. Cada contrato mantiene `mapping_confirmed=False`;
+cambiarlo requiere evidencia, pruebas y una decisión documentada.
 
-Los endpoints `/api/v1/extract/*` son contratos objetivo: WinBridgeApi aún no los
-implementa porque falta confirmar el esquema de SICO. `/query` no es consumido por
-este proyecto.
+Los seis endpoints específicos están implementados como pilotos. Deben validarse
+contra SICO y contra las restricciones del destino antes de habilitar escrituras.
+`/query` no es consumido por este proyecto.
 
 ## Requisitos
 

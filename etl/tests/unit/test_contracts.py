@@ -20,6 +20,18 @@ class ContractTests(unittest.TestCase):
 
         self.assertEqual(validated["priceUsd"], Decimal("12.34"))
 
+    def test_price_uses_confirmed_composite_key(self) -> None:
+        self.assertEqual(
+            CONTRACTS[Entity.PRICES].natural_key_candidates,
+            ("cod_articulo", "cod_lista"),
+        )
+
+    def test_warehouse_stock_uses_confirmed_composite_key(self) -> None:
+        self.assertEqual(
+            CONTRACTS[Entity.WAREHOUSE_STOCK].natural_key_candidates,
+            ("cod_articulo", "cod_almacen"),
+        )
+
     def test_required_field_is_rejected(self) -> None:
         with self.assertRaisesRegex(ContractError, "articleCode"):
             CONTRACTS[Entity.ARTICLES].validate({"active": True})
@@ -64,6 +76,34 @@ class ContractTests(unittest.TestCase):
     def test_all_mappings_are_deliberately_unconfirmed(self) -> None:
         self.assertTrue(CONTRACTS)
         self.assertTrue(all(not contract.mapping_confirmed for contract in CONTRACTS.values()))
+
+    def test_customer_uses_confirmed_code_candidate_only(self) -> None:
+        self.assertEqual(
+            CONTRACTS[Entity.CUSTOMERS].natural_key_candidates,
+            ("cod_dap",),
+        )
+
+    def test_price_list_code_matches_price_reference_length(self) -> None:
+        with self.assertRaisesRegex(ContractError, "exceeds 3"):
+            CONTRACTS[Entity.PRICE_LISTS].validate(
+                {"priceListCode": "0001", "name": "Lista", "active": True}
+            )
+
+    def test_article_mapping_preserves_web_owned_fields(self) -> None:
+        destinations = set(CONTRACTS[Entity.ARTICLES].destination_mapping.values())
+        self.assertTrue(
+            {"descripcion_comercial", "categoria", "imagen_url"}.isdisjoint(destinations)
+        )
+
+    def test_warehouse_code_matches_stock_reference_length(self) -> None:
+        with self.assertRaisesRegex(ContractError, "exceeds 10"):
+            CONTRACTS[Entity.WAREHOUSES].validate(
+                {
+                    "warehouseCode": "W" * 11,
+                    "name": "Almacén",
+                    "active": True,
+                }
+            )
 
 
 if __name__ == "__main__":

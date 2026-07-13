@@ -34,5 +34,6 @@ de campos confirmados y pendientes en [docs/ETL_MAPPINGS.md](docs/ETL_MAPPINGS.m
 
 Existe una prueba funcional de la API con endpoints de salud y ejecución temporal
 de SQL. El proyecto ETL ya dispone de contratos preliminares, validación, CLI,
-controles de publicación y pruebas aisladas. Los mappings de SICO y las claves de
-PostgreSQL aún deben confirmarse antes de habilitar escrituras.
+controles de publicación y pruebas aisladas. Las consultas y claves de origen de
+las seis entidades están confirmadas; las restricciones de PostgreSQL y la
+validación funcional aún deben completarse antes de habilitar escrituras.

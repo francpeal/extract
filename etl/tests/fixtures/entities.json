@@ -2,9 +2,6 @@
   "articles": {
     "articleCode": "ART-001",
     "description": "Artículo de prueba",
-    "commercialDescription": null,
-    "category": "01",
-    "imageUrl": null,
     "active": true,
     "brand": "MARCA",
     "alternateCode": "ALT-001",
@@ -15,12 +12,13 @@
     "legalName": "Cliente de prueba S.A.C.",
     "taxId": "20000000001",
     "active": true,
-    "dapCode": "CLI-001",
+    "customerCode": "CLI-001",
     "email": "cliente@example.invalid",
     "phone": null,
     "mobile": null,
     "representative": null,
     "assignedSellerCode": "V001",
+    "sourceCreatedAt": "2026-07-13T17:00:00Z",
     "sourceUpdatedAt": "2026-07-13T12:00:00Z"
   },
   "warehouses": {

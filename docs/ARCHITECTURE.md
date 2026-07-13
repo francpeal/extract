@@ -76,7 +76,7 @@ Aplicación web (Ubuntu) ---> PostgreSQL (proyección local)
 |---|---|---|
 | Interfaz HTTP | Kestrel en localhost | Kestrel en localhost |
 | Acceso a datos | SQL arbitrario en `/query` | Operaciones de lectura específicas |
-| Contrato | Filas SQL genéricas | DTO estable de precios y stock |
+| Contrato | Seis recursos específicos y SQL genérico temporal | DTO estable de seis entidades |
 | Permisos SQL | Dependen de configuración | Usuario dedicado de solo lectura |
 | Salud | Confirma que el proceso vive | Salud básica y diagnóstico separado de BD |
 | Servicio | `WindowsServiceLifetime`, ejecutado como `LocalSystem` | Cuenta de servicio con privilegios mínimos |

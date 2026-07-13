@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Http.Timeouts;
 using System.Text.Json;
+using WinBridgeApi.Extraction;
 
 const int CommandTimeoutSeconds = 25;
 const int RequestTimeoutSeconds = 30;
@@ -76,6 +77,13 @@ app.MapPost("/query", async (QueryRequest? request, HttpContext ctx) =>
     return await ExecuteQueryAsync(
         request.Sql, request.Params, connectionString, logger, ctx.RequestAborted, requestTimeout);
 }).WithRequestTimeout(TimeSpan.FromSeconds(RequestTimeoutSeconds));
+
+app.MapCustomerExtraction(connectionString);
+app.MapPriceListExtraction(connectionString);
+app.MapArticleExtraction(connectionString);
+app.MapWarehouseExtraction(connectionString);
+app.MapPriceExtraction(connectionString);
+app.MapWarehouseStockExtraction(connectionString);
 
 logger.LogInformation("WinBridgeApi starting on http://localhost:5000");
 

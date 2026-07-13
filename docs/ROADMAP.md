@@ -4,9 +4,10 @@
 
 **Fase actual:** relevamiento de SICO y validación del ETL en modo seguro.
 
-La API mínima, el túnel y la base del ETL existen. Los seis contratos y mappings
-son preliminares; la publicación PostgreSQL permanece bloqueada hasta confirmar
-el esquema de SICO y las restricciones del destino.
+La API mínima, el túnel y la base del ETL existen. Las seis consultas, contratos y
+claves de origen están implementados como pilotos; la publicación PostgreSQL
+permanece bloqueada hasta validar la semántica funcional, las muestras y las
+restricciones del destino.
 
 ## Completado
 
@@ -39,8 +40,14 @@ el esquema de SICO y las restricciones del destino.
 - [ ] Confirmar edición y nivel de parches exactos de Windows Server 2012.
 - [ ] Confirmar cadena de conexión efectiva y usuario de solo lectura.
 - [ ] Inspeccionar constraints, índices, secuencias y duplicados de las seis tablas PostgreSQL.
-- [ ] Identificar tablas o vistas de artículos, precios y stock.
-- [ ] Identificar tablas o vistas de clientes, almacenes y listas de precios.
+- [x] Identificar `M_PRECIO` como origen de precios.
+- [x] Identificar `M_STOCK` como origen de stock por almacén.
+- [x] Identificar `VW_Articulo` como origen de artículos.
+- [x] Identificar `D_TABLAS` con `CDG_TAB = 'ARE'` como origen de almacenes.
+- [x] Identificar `D_TABLAS` con `CDG_TAB = 'PRC'` como origen de listas de precios.
+- [x] Identificar `m_client` como origen de clientes.
+- [x] Confirmar la consulta y mapping de columnas de clientes desde `m_client`.
+- [x] Confirmar `ruc_cli` como clave primaria y `ing_cli` como hora Lima UTC−05:00.
 - [ ] Confirmar claves y relaciones mediante consultas de muestra.
 - [ ] Acordar semántica de precio, moneda, impuestos, stock y almacén.
 - [ ] Medir volumen de datos y duración de las consultas.
@@ -66,7 +73,12 @@ el esquema de SICO y las restricciones del destino.
 - [x] Crear cliente ETL para los seis endpoints objetivo.
 - [x] Implementar `dry-run` y validación sin escrituras.
 - [x] Bloquear publicación de mappings no confirmados.
-- [ ] Implementar los seis endpoints específicos en WinBridgeApi.
+- [x] Implementar endpoint paginado de clientes con validación de clave de origen.
+- [x] Implementar endpoint paginado de listas con validación de `NUM_ITEM`.
+- [x] Implementar endpoint paginado de artículos preservando campos de la web.
+- [x] Implementar endpoint paginado de almacenes con validación de `NUM_ITEM`.
+- [x] Implementar endpoint paginado de precios con clave compuesta.
+- [x] Implementar endpoint paginado de stock con clave compuesta.
 - [ ] Confirmar mappings y habilitar repositorios entidad por entidad.
 - [ ] Probar migraciones y upserts contra PostgreSQL aislado.
 - [ ] Implementar staging persistente para snapshots grandes si el volumen lo exige.
@@ -83,17 +95,28 @@ el esquema de SICO y las restricciones del destino.
 
 ## Próximo paso recomendado
 
-Ejecutar `etl/scripts/inspect_postgres.sql` contra PostgreSQL y las consultas de
-`discovery/sql/` contra SICO. Completar `docs/ETL_MAPPINGS.md` con evidencia de
-claves, relaciones, semántica y volumen. Después implementar un endpoint y un
-repositorio piloto, preferentemente de una entidad maestra pequeña, y validarlo de
-extremo a extremo antes de habilitar precios o stock.
+Validar los seis endpoints implementados contra SICO y ejecutar
+`etl/scripts/inspect_postgres.sql` para comprobar la restricción única de
+`clientes.cod_dap`, `lista_precios.codigo`, `articulos.codigo` y
+`almacenes.codigo`, además de la restricción compuesta de
+`precios(cod_articulo, cod_lista)` y
+`stock_almacen(cod_articulo, cod_almacen)`, y detectar nulos/duplicados antes de
+habilitar los upserts. Mantener las seis publicaciones bloqueadas y comparar
+muestras anonimizadas con el ERP.
 
 ## Bloqueos actuales
 
-- Falta relevar el esquema y las reglas funcionales de precios y stock del ERP.
-- Faltan los objetos SICO y reglas de clientes, almacenes y listas de precios.
+- Falta validar funcionalmente moneda, impuestos, vigencia y descuentos de
+  precios, además del significado y periodo de las cantidades de stock.
 - No están confirmadas las claves, constraints ni secuencias PostgreSQL.
-- Los endpoints `/api/v1/extract/*` todavía no están implementados.
+- Los seis endpoints existen como pilotos y requieren validación contra SICO.
+- Falta confirmar o crear controladamente la unicidad de `clientes.cod_dap`.
+- Falta confirmar o crear controladamente la unicidad de `lista_precios.codigo`.
+- Falta confirmar o crear controladamente la unicidad de `articulos.codigo`.
+- Falta confirmar o crear controladamente la unicidad de `almacenes.codigo`.
+- Falta confirmar o crear controladamente la unicidad compuesta de
+  `precios(cod_articulo, cod_lista)`.
+- Falta confirmar o crear controladamente la unicidad compuesta de
+  `stock_almacen(cod_articulo, cod_almacen)`.
 - El entorno de desarrollo de esta sesión no tiene acceso a los endpoints locales
   del túnel (`127.0.0.1:15000`) ni de WinBridgeApi (`127.0.0.1:5000`).

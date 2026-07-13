@@ -7,8 +7,10 @@ que representan artículos, precios y stock. No define todavía el contrato v1.
 
 - **Confirmado:** SQL Server es 2012 SP1 y se accede mediante WinBridgeApi.
 - **Confirmado:** el flujo Ubuntu → SSH → API → SQL Server funcionó manualmente.
-- **Pendiente:** nombres y semántica de tablas/vistas, claves, precios, moneda,
-  impuestos, stock, almacenes y cursor incremental.
+- **Confirmado:** `M_PRECIO` y `M_STOCK`, sus columnas de extracción y sus claves
+  compuestas.
+- **Pendiente:** semántica funcional de precios, moneda, impuestos, stock,
+  almacenes incluidos y cursor incremental.
 - **Bloqueo de esta sesión:** desde el entorno de desarrollo no respondieron
   `127.0.0.1:15000` ni `127.0.0.1:5000`. Las consultas deben ejecutarse desde el
   Ubuntu que posee el túnel o desde Windows contra la API local.
@@ -90,7 +92,8 @@ Invoke-RestMethod -Method Post -Uri "$baseUrl/query" `
 
 ## Criterio de cierre del relevamiento
 
-La fase puede marcarse completa solo cuando las consultas finales de precio y
-stock estén respaldadas por claves/relaciones observadas, muestras comparadas con
-el ERP, definiciones funcionales y mediciones de volumen/duración. Hasta entonces,
-los endpoints y DTO de `docs/API.md` continúan siendo preliminares.
+Las consultas finales y claves de precio y stock ya fueron proporcionadas. La
+fase puede marcarse completa solo cuando estén respaldadas por relaciones
+observadas, muestras comparadas con el ERP, definiciones funcionales y mediciones
+de volumen/duración. Hasta entonces, los endpoints y DTO de `docs/API.md`
+continúan siendo preliminares.
