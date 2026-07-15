@@ -75,15 +75,15 @@ Aplicación web (Ubuntu) ---> PostgreSQL (proyección local)
 | Tema | Estado actual | Estado objetivo |
 |---|---|---|
 | Interfaz HTTP | Kestrel en localhost | Kestrel en localhost |
-| Acceso a datos | SQL arbitrario en `/query` | Operaciones de lectura específicas |
-| Contrato | Seis recursos específicos y SQL genérico temporal | DTO estable de seis entidades |
+| Acceso a datos | Seis lecturas específicas; `/query` temporal sigue activo | Retirar o proteger `/query` |
+| Contrato | Seis snapshots paginados validados técnicamente | Aprobación funcional y contrato v1 estable |
 | Permisos SQL | Dependen de configuración | Usuario dedicado de solo lectura |
 | Salud | Confirma que el proceso vive | Salud básica y diagnóstico separado de BD |
 | Servicio | `WindowsServiceLifetime`, ejecutado como `LocalSystem` | Cuenta de servicio con privilegios mínimos |
 | Transporte | HTTP plano | HTTP exclusivamente dentro de SSH |
-| Persistencia Ubuntu | Base ETL creada, aún sin desplegar | ETL Linux hacia PostgreSQL |
-| Orquestación | Manual / consumidor | CLI y timer systemd dedicado |
-| Escritura ETL | No existe | Bloqueada hasta confirmar mappings; luego transaccional |
+| Persistencia Ubuntu | ETL 0.1.4 instalado; tablas de control creadas | ETL Linux hacia PostgreSQL |
+| Orquestación | CLI manual; servicio y timer no registrados | Servicio y timer systemd dedicado |
+| Escritura ETL | Habilitada para las seis entidades en 0.1.5 | Upsert transaccional observado y programado |
 
 ## Flujo principal
 

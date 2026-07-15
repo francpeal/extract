@@ -1,0 +1,59 @@
+  table_name   | ordinal_position |      column_name      |        data_type         | character_maximum_length | numeric_precision | numeric_scale | is_nullable |              column_default               
+---------------+------------------+-----------------------+--------------------------+--------------------------+-------------------+---------------+-------------+-------------------------------------------
+ almacenes     |                1 | id                    | integer                  |                          |                32 |             0 | NO          | nextval('almacenes_id_seq'::regclass)
+ almacenes     |                2 | codigo                | character varying        |                       10 |                   |               | NO          | 
+ almacenes     |                3 | nombre                | character varying        |                      100 |                   |               | NO          | 
+ almacenes     |                4 | abreviatura           | character varying        |                       10 |                   |               | YES         | 
+ almacenes     |                5 | estado                | boolean                  |                          |                   |               | YES         | 
+ almacenes     |                6 | updated_at            | timestamp with time zone |                          |                   |               | NO          | now()
+ articulos     |                1 | id                    | integer                  |                          |                32 |             0 | NO          | nextval('articulos_id_seq'::regclass)
+ articulos     |                2 | codigo                | character varying        |                       20 |                   |               | NO          | 
+ articulos     |                3 | descripcion           | text                     |                          |                   |               | YES         | 
+ articulos     |                4 | descripcion_comercial | text                     |                          |                   |               | YES         | 
+ articulos     |                5 | categoria             | character varying        |                        2 |                   |               | YES         | 
+ articulos     |                6 | imagen_url            | character varying        |                      500 |                   |               | YES         | 
+ articulos     |                7 | activo                | boolean                  |                          |                   |               | NO          | true
+ articulos     |                8 | updated_at            | timestamp with time zone |                          |                   |               | NO          | now()
+ articulos     |                9 | marca                 | character varying        |                      120 |                   |               | YES         | 
+ articulos     |               10 | cod_alterno           | character varying        |                      100 |                   |               | YES         | 
+ clientes      |                1 | id                    | integer                  |                          |                32 |             0 | NO          | nextval('clientes_id_seq'::regclass)
+ clientes      |                2 | nombre                | character varying        |                      150 |                   |               | NO          | 
+ clientes      |                3 | razon_social          | character varying        |                      300 |                   |               | NO          | 
+ clientes      |                4 | ruc                   | character varying        |                       50 |                   |               | NO          | 
+ clientes      |                5 | estado                | boolean                  |                          |                   |               | NO          | 
+ clientes      |                6 | created_at            | timestamp with time zone |                          |                   |               | NO          | now()
+ clientes      |                7 | updated_at            | timestamp with time zone |                          |                   |               | NO          | now()
+ clientes      |                8 | cod_dap               | character varying        |                       50 |                   |               | YES         | 
+ clientes      |                9 | email                 | character varying        |                      100 |                   |               | YES         | 
+ clientes      |               10 | telefono              | character varying        |                       50 |                   |               | YES         | 
+ clientes      |               11 | celular               | character varying        |                       50 |                   |               | YES         | 
+ clientes      |               12 | representante         | character varying        |                      200 |                   |               | YES         | 
+ clientes      |               13 | cod_vendedor_asig     | character varying        |                       10 |                   |               | YES         | 
+ lista_precios |                1 | id                    | integer                  |                          |                32 |             0 | NO          | nextval('lista_precios_id_seq'::regclass)
+ lista_precios |                2 | codigo                | character varying        |                        3 |                   |               | NO          | 
+ lista_precios |                3 | nombre                | character varying        |                      100 |                   |               | NO          | 
+ lista_precios |                4 | activo                | boolean                  |                          |                   |               | NO          | true
+ lista_precios |                5 | updated_at            | timestamp with time zone |                          |                   |               | NO          | now()
+ precios       |                1 | id                    | integer                  |                          |                32 |             0 | NO          | nextval('precios_id_seq'::regclass)
+ precios       |                2 | cod_articulo          | character varying        |                       20 |                   |               | NO          | 
+ precios       |                3 | cod_lista             | character varying        |                        3 |                   |               | NO          | 
+ precios       |                4 | pre_dol               | numeric                  |                          |                   |               | NO          | 
+ precios       |                5 | pre_sol               | numeric                  |                          |                   |               | NO          | 
+ precios       |                6 | min_dol               | numeric                  |                          |                   |               | YES         | 
+ precios       |                7 | min_sol               | numeric                  |                          |                   |               | YES         | 
+ precios       |                8 | max_dol               | numeric                  |                          |                   |               | YES         | 
+ precios       |                9 | max_sol               | numeric                  |                          |                   |               | YES         | 
+ precios       |               10 | por_dct1              | numeric                  |                          |                   |               | YES         | 
+ precios       |               11 | por_dct2              | numeric                  |                          |                   |               | YES         | 
+ precios       |               12 | por_dct3              | numeric                  |                          |                   |               | YES         | 
+ precios       |               13 | updated_at            | timestamp with time zone |                          |                   |               | NO          | now()
+ stock_almacen |                1 | id                    | integer                  |                          |                32 |             0 | NO          | nextval('stock_almacen_id_seq'::regclass)
+ stock_almacen |                2 | cod_articulo          | character varying        |                       20 |                   |               | NO          | 
+ stock_almacen |                3 | cod_almacen           | character varying        |                       10 |                   |               | NO          | 
+ stock_almacen |                4 | stock_inicial         | numeric                  |                          |                   |               | YES         | 
+ stock_almacen |                5 | stock_ingresos        | numeric                  |                          |                   |               | YES         | 
+ stock_almacen |                6 | stock_salidas         | numeric                  |                          |                   |               | YES         | 
+ stock_almacen |                7 | stock_actual          | numeric                  |                          |                   |               | YES         | 
+ stock_almacen |                8 | updated_at            | timestamp with time zone |                          |                   |               | NO          | now()
+(55 rows)
+

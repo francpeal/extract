@@ -64,12 +64,19 @@ Proveer un canal estable, controlado y observable para extraer datos del ERP sin
 
 ## Pendientes de definición funcional
 
-- Identificador canónico del artículo: código, SKU u otro.
 - Lista o tipo de precio requerido, moneda e impuestos.
 - Stock físico, disponible, comprometido u otra definición.
 - Granularidad por almacén/sucursal y almacenes incluidos.
 - Frecuencia de consulta y volumen aproximado.
-- Extracción completa o incremental y campo confiable para el cursor.
-- Tratamiento de artículos inactivos y valores nulos.
-- Clave canónica y política de datos personales para clientes.
-- Política de ausencia por entidad: conservar, desactivar o eliminar.
+- Aprobación de las omisiones por calidad de artículos y clientes.
+- Política de datos personales y retención para clientes.
+
+## Definiciones técnicas ya cerradas
+
+- `VW_Articulo.ArtCod` es el identificador canónico del artículo.
+- La primera puesta en marcha usa snapshots completos paginados; no existe una
+  marca confiable para extracción incremental.
+- La ausencia en un snapshot no elimina ni desactiva filas locales.
+- `m_client.ruc_cli` es la clave del cliente y `cdg_alt` alimenta el RUC.
+- Artículos con código duplicado y clientes con RUC vacío o duplicado se omiten
+  por decisiones registradas en `docs/DECISIONS.md`.

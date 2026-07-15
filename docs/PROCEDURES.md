@@ -372,16 +372,16 @@ un plan de rollback; no debe improvisarse durante una migración urgente.
 ## Operación futura del ETL
 
 La base del sincronizador y las plantillas systemd se documentan en
-[`etl/README.md`](../etl/README.md). No habilitar `sico-etl.timer` mientras
-`docs/ETL_MAPPINGS.md` mantenga claves o mappings pendientes y los contratos
-correspondientes tengan `mapping_confirmed=false`.
+[`etl/README.md`](../etl/README.md). Al cierre de la validación técnica del
+2026-07-14, `sico-etl` 0.1.4, las migraciones de control, el rol de privilegio
+mínimo y el `dry-run` integrado están validados. La actualización 0.1.5 habilita
+la publicación de las seis entidades.
 
-La secuencia de aceptación es:
+La secuencia operativa es:
 
-1. Aplicar migraciones de control en un entorno PostgreSQL aislado.
-2. Ejecutar las seis entidades con `--dry-run`.
-3. Comparar muestras contra SICO y revisar métricas de volumen.
-4. Habilitar y probar una entidad maestra pequeña.
-5. Ejecutar un snapshot completo sin timer.
-6. Verificar idempotencia con una segunda ejecución.
-7. Activar el timer solamente después de aprobar rollback y monitoreo.
+1. instalar el wheel 0.1.5;
+2. registrar `sico-etl.service` y realizar una ejecución manual;
+3. observar `journalctl` y la salida de la ejecución;
+4. registrar y habilitar `sico-etl.timer` con el intervalo actual de cinco
+   minutos;
+5. revisar una ejecución automática antes de cambiar frecuencia o controles.

@@ -1,5 +1,6 @@
 import os
 import unittest
+from dataclasses import replace
 from unittest.mock import patch
 
 from sico_etl.config import ConfigurationError, Settings
@@ -21,7 +22,8 @@ class SafetyTests(unittest.TestCase):
                 Settings.from_env()
 
     def test_unconfirmed_mapping_blocks_before_database_use(self) -> None:
-        repository = PostgresEntityRepository(object(), CONTRACTS[Entity.ARTICLES])
+        contract = replace(CONTRACTS[Entity.ARTICLES], mapping_confirmed=False)
+        repository = PostgresEntityRepository(object(), contract)
         with self.assertRaisesRegex(MappingNotConfirmedError, "not confirmed"):
             repository.publish([{"articleCode": "A", "active": True}])
 

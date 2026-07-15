@@ -25,11 +25,15 @@ class FakeTransport:
         return value
 
 
-def response(items: Iterable[dict[str, object]], cursor: str | None = None) -> TransportResponse:
+def response(
+    items: Iterable[dict[str, object]],
+    cursor: str | None = None,
+    extracted_at: str = "2026-07-13T12:00:00Z",
+) -> TransportResponse:
     payload = {
         "items": list(items),
         "nextCursor": cursor,
-        "extractedAt": "2026-07-13T12:00:00Z",
+        "extractedAt": extracted_at,
     }
     return TransportResponse(200, json.dumps(payload).encode())
 
@@ -56,6 +60,25 @@ class SourceTests(unittest.TestCase):
 
         self.assertEqual(len(pages), 2)
         self.assertIsNotNone(pages[0].extracted_at.tzinfo)
+
+    def test_parses_dotnet_seven_digit_fractional_seconds(self) -> None:
+        item = {
+            "customerCode": "CLI-001",
+            "name": "Cliente",
+            "legalName": "Cliente S.A.C.",
+            "taxId": "20000000001",
+            "active": True,
+            "sourceCreatedAt": "2026-07-14T13:57:54.1234567-05:00",
+        }
+        transport = FakeTransport(
+            [response([item], extracted_at="2026-07-14T18:57:54.2646986+00:00")]
+        )
+
+        page = next(client(transport).iter_pages(Entity.CUSTOMERS))
+
+        self.assertEqual(page.extracted_at.microsecond, 264698)
+        self.assertEqual(page.items[0]["sourceCreatedAt"].microsecond, 123456)
+        self.assertEqual(page.items[0]["sourceCreatedAt"].utcoffset().total_seconds(), 0)
 
     def test_retries_retryable_http_status(self) -> None:
         sleeps: list[float] = []

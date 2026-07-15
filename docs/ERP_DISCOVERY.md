@@ -3,17 +3,22 @@
 ## Objetivo y estado
 
 Este procedimiento reúne evidencia para identificar los objetos, claves y reglas
-que representan artículos, precios y stock. No define todavía el contrato v1.
+que representan artículos, precios y stock. El contrato piloto técnico ya existe;
+este documento queda como guía para cerrar su aceptación funcional.
 
 - **Confirmado:** SQL Server es 2012 SP1 y se accede mediante WinBridgeApi.
 - **Confirmado:** el flujo Ubuntu → SSH → API → SQL Server funcionó manualmente.
 - **Confirmado:** `M_PRECIO` y `M_STOCK`, sus columnas de extracción y sus claves
   compuestas.
+- **Confirmado:** snapshots completos de las seis entidades, 53 462 filas en 111
+  páginas y aproximadamente 114 segundos.
+- **Confirmado:** no existe una marca confiable para extracción incremental; el
+  piloto usa snapshots completos paginados.
 - **Pendiente:** semántica funcional de precios, moneda, impuestos, stock,
-  almacenes incluidos y cursor incremental.
-- **Bloqueo de esta sesión:** desde el entorno de desarrollo no respondieron
-  `127.0.0.1:15000` ni `127.0.0.1:5000`. Las consultas deben ejecutarse desde el
-  Ubuntu que posee el túnel o desde Windows contra la API local.
+  almacenes incluidos y aprobación de omisiones por calidad del origen.
+- **Ruta operativa:** las consultas reales se ejecutan desde el Ubuntu que posee
+  el túnel o desde Windows contra la API local; el entorno de desarrollo no
+  necesita acceder a esos loopbacks.
 
 Los archivos de `discovery/sql/` son consultas de catálogo o lectura compatibles
 con SQL Server 2012. Los términos de búsqueda de `02_candidate_columns.sql` son
@@ -82,7 +87,7 @@ Invoke-RestMethod -Method Post -Uri "$baseUrl/query" `
 
 ## Preguntas que requieren confirmación funcional
 
-- ¿Qué identificador del ERP reconoce el consumidor como artículo?
+- ¿Aprueba el consumidor `VW_Articulo.ArtCod` como identificador ya implementado?
 - ¿Qué lista o tipo de precio debe extraerse y el importe incluye impuestos?
 - ¿Cuál es la moneda y puede variar por lista o artículo?
 - ¿Stock significa físico, disponible, comprometido u otra cantidad?
@@ -92,8 +97,6 @@ Invoke-RestMethod -Method Post -Uri "$baseUrl/query" `
 
 ## Criterio de cierre del relevamiento
 
-Las consultas finales y claves de precio y stock ya fueron proporcionadas. La
-fase puede marcarse completa solo cuando estén respaldadas por relaciones
-observadas, muestras comparadas con el ERP, definiciones funcionales y mediciones
-de volumen/duración. Hasta entonces, los endpoints y DTO de `docs/API.md`
-continúan siendo preliminares.
+Las consultas, claves, volúmenes y recorrido técnico ya están confirmados. El
+cierre restante exige muestras comparadas con el ERP y definiciones funcionales;
+hasta entonces, los endpoints y DTO de `docs/API.md` conservan estado piloto.

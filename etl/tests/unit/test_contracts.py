@@ -73,9 +73,9 @@ class ContractTests(unittest.TestCase):
                 }
             )
 
-    def test_all_mappings_are_deliberately_unconfirmed(self) -> None:
+    def test_all_mappings_are_enabled_for_operational_publication(self) -> None:
         self.assertTrue(CONTRACTS)
-        self.assertTrue(all(not contract.mapping_confirmed for contract in CONTRACTS.values()))
+        self.assertTrue(all(contract.mapping_confirmed for contract in CONTRACTS.values()))
 
     def test_customer_uses_confirmed_code_candidate_only(self) -> None:
         self.assertEqual(
@@ -101,6 +101,35 @@ class ContractTests(unittest.TestCase):
                 {
                     "warehouseCode": "W" * 11,
                     "name": "Almacén",
+                    "active": True,
+                }
+            )
+
+    def test_warehouse_destination_lengths_are_enforced(self) -> None:
+        with self.assertRaisesRegex(ContractError, "name exceeds 100"):
+            CONTRACTS[Entity.WAREHOUSES].validate(
+                {
+                    "warehouseCode": "001",
+                    "name": "W" * 101,
+                    "active": True,
+                }
+            )
+        with self.assertRaisesRegex(ContractError, "abbreviation exceeds 10"):
+            CONTRACTS[Entity.WAREHOUSES].validate(
+                {
+                    "warehouseCode": "001",
+                    "name": "Almacén",
+                    "abbreviation": "W" * 11,
+                    "active": True,
+                }
+            )
+
+    def test_price_list_destination_name_length_is_enforced(self) -> None:
+        with self.assertRaisesRegex(ContractError, "name exceeds 100"):
+            CONTRACTS[Entity.PRICE_LISTS].validate(
+                {
+                    "priceListCode": "001",
+                    "name": "L" * 101,
                     "active": True,
                 }
             )

@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sico-etl"
-version = "0.1.0"
+version = "0.1.5"
 description = "Sincronizador de solo lectura desde SICO/WinBridgeApi hacia PostgreSQL"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
   "psycopg[binary]>=3.2,<4",
 ]
@@ -26,5 +26,5 @@ line-length = 100
 target-version = "py311"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 strict = true

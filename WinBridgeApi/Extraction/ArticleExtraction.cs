@@ -44,7 +44,8 @@ public static class ArticleExtraction
                alternate_code,
                key_count
         FROM normalized
-        WHERE @afterCode IS NULL OR article_code > @afterCode
+        WHERE key_count = 1
+          AND (@afterCode IS NULL OR article_code > @afterCode)
         ORDER BY article_code;
         """;
 

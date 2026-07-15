@@ -1,0 +1,2 @@
+[console_scripts]
+sico-etl = sico_etl.cli:main

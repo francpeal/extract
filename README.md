@@ -29,11 +29,19 @@ Las instrucciones de despliegue actuales están en
 
 La base del sincronizador Linux está en [etl/README.md](etl/README.md) y la matriz
 de campos confirmados y pendientes en [docs/ETL_MAPPINGS.md](docs/ETL_MAPPINGS.md).
+El procedimiento reproducible de instalación, permisos y credenciales está en
+[etl/DEPLOY_UBUNTU.md](etl/DEPLOY_UBUNTU.md).
 
 ## Estado actual
 
-Existe una prueba funcional de la API con endpoints de salud y ejecución temporal
-de SQL. El proyecto ETL ya dispone de contratos preliminares, validación, CLI,
-controles de publicación y pruebas aisladas. Las consultas y claves de origen de
-las seis entidades están confirmadas; las restricciones de PostgreSQL y la
-validación funcional aún deben completarse antes de habilitar escrituras.
+WinBridgeApi está desplegado como servicio Windows y los seis endpoints recorren
+snapshots completos a través del túnel. `sico-etl` 0.1.5 habilita la publicación
+idempotente de las seis entidades a PostgreSQL. La operación inicia de forma
+manual y se observa en tiempo real antes de habilitar su timer.
+
+Las restricciones y claves naturales de PostgreSQL están confirmadas. Precios y
+stock se transfieren tal como los expone SICO: no se agregan ni se interpretan
+campos de moneda, impuestos, vigencia o disponibilidad fuera del alcance actual.
+Los temas de seguridad y las pruebas aisladas restantes se conservan como mejoras
+no bloqueantes. El punto exacto de reanudación está en
+[docs/ROADMAP.md](docs/ROADMAP.md).

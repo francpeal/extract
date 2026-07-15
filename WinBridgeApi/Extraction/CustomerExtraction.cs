@@ -20,7 +20,7 @@ public static class CustomerExtraction
                    LTRIM(RTRIM(des_cli)) AS razon_social,
                    cdg_alt AS ruc,
                    CONVERT(bit, 1) AS estado,
-                   ing_cli AS created_at,
+                   ISNULL(ing_cli, DATETIMEFROMPARTS(2000, 1, 1, 8, 0, 0, 0)) AS created_at,
                    NULL AS updated_at,
                    EMA_CLI AS email,
                    TEL_CLI AS telefono,
@@ -28,6 +28,7 @@ public static class CustomerExtraction
                    REP_CLI AS representante,
                    CDG_VEND AS cod_vendedor_asig
             FROM m_client
+            WHERE ISNULL(cdg_alt, '') <> ''
         ),
         normalized AS
         (
@@ -43,7 +44,9 @@ public static class CustomerExtraction
                    representante,
                    cod_vendedor_asig,
                    COUNT_BIG(*) OVER
-                       (PARTITION BY CONVERT(nvarchar(4000), cod_cliente)) AS key_count
+                       (PARTITION BY CONVERT(nvarchar(4000), cod_cliente)) AS key_count,
+                   COUNT_BIG(*) OVER
+                       (PARTITION BY CONVERT(nvarchar(4000), ruc)) AS tax_id_count
             FROM provided_query
         )
         SELECT TOP (@take)
@@ -60,7 +63,9 @@ public static class CustomerExtraction
                cod_vendedor_asig,
                key_count
         FROM normalized
-        WHERE @afterCode IS NULL OR customer_code > @afterCode
+        WHERE key_count = 1
+          AND tax_id_count = 1
+          AND (@afterCode IS NULL OR customer_code > @afterCode)
         ORDER BY customer_code;
         """;
 

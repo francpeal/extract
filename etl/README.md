@@ -5,19 +5,21 @@ proyectarlos en PostgreSQL. SICO continúa siendo la fuente de verdad.
 
 ## Estado de seguridad
 
-La extracción y validación en modo `--dry-run` están implementadas. La publicación
-se bloquea deliberadamente porque, aunque los mappings de origen están
-documentados, las restricciones naturales de PostgreSQL y la validación funcional
-todavía no fueron confirmadas. Cada contrato mantiene `mapping_confirmed=False`;
-cambiarlo requiere evidencia, pruebas y una decisión documentada.
+La versión 0.1.5 habilita la publicación de las seis entidades mediante upsert
+transaccional. El `dry-run` previo recorrió 53 462 filas en 111 páginas, sin
+rechazos ni escrituras. Las restricciones naturales de PostgreSQL están
+confirmadas. Los datos de precios y stock se transfieren tal como están expuestos
+por WinBridgeApi, sin interpretar ni derivar información adicional.
 
-Los seis endpoints específicos están implementados como pilotos. Deben validarse
-contra SICO y contra las restricciones del destino antes de habilitar escrituras.
-`/query` no es consumido por este proyecto.
+Los seis endpoints específicos y sus snapshots completos están validados
+técnicamente. `/query` no es consumido por este proyecto.
+
+El cliente acepta timestamps ISO 8601 emitidos por .NET con siete dígitos de
+fracción de segundo y los normaliza a la precisión de microsegundos de Python.
 
 ## Requisitos
 
-- Python 3.11 o superior.
+- Python 3.10 o superior.
 - PostgreSQL accesible desde Linux.
 - Túnel `winbridge-tunnel.service` activo en `127.0.0.1:15000`.
 - Endpoints específicos implementados en WinBridgeApi.
@@ -101,20 +103,14 @@ control.
 
 ## Activación en Linux
 
-Los archivos de `deploy/systemd/` son plantillas y no deben activarse mientras los
-mappings estén pendientes. Una vez aprobados:
+El procedimiento completo y validado, incluidos usuario Linux, rol PostgreSQL,
+permisos, claves, índices y `PGPASSFILE`, está en
+[`DEPLOY_UBUNTU.md`](DEPLOY_UBUNTU.md).
 
-1. Instalar el proyecto en `/opt/sico-etl` con un usuario dedicado.
-2. Crear `/etc/sico-etl/sico-etl.env` con modo `0600`.
-3. Aplicar las migraciones con una cuenta autorizada para DDL.
-4. Ejecutar primero `--dry-run` y comparar las seis muestras con SICO.
-5. Copiar y revisar las unidades systemd.
-6. Habilitar el timer solo después de una ejecución completa satisfactoria.
-
-El intervalo de cinco minutos incluido en la plantilla es ilustrativo, no una
-frecuencia aprobada. Debe ajustarse después de medir las seis extracciones. El
-umbral de reducción predeterminado es 0%: cualquier snapshot menor se bloquea
-hasta acordar una política de ausencias.
+Los archivos de `deploy/systemd/` se instalan después de actualizar a 0.1.5. La
+primera ejecución se inicia manualmente y se observa mediante `journalctl`; luego
+se habilita el timer de cinco minutos configurado para esta fase operativa. El
+umbral de reducción predeterminado es 0%: cualquier snapshot menor se bloquea.
 
 Diagnóstico previsto:
 

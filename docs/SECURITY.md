@@ -17,10 +17,32 @@ o el análisis de riesgo lo exige.
 - Mantener la restricción del túnel a la IP del servidor Ubuntu.
 - Usar una cuenta SQL dedicada con permisos de solo lectura y acceso limitado a
   los objetos necesarios.
-- Retirar `/query` antes de considerar productiva la integración.
+- Mantener `/query` solo durante el despliegue piloto autorizado, exclusivamente
+  sobre loopback/túnel y con una cuenta SQL técnicamente limitada a lectura.
+- Retirar `/query` antes de cerrar la aceptación productiva definitiva.
 - Mantener credenciales y valores reales fuera de Git.
 - No registrar contraseñas, cadenas de conexión ni conjuntos de datos completos.
 - Ejecutar el servicio Windows con el mínimo privilegio viable.
+
+## Estado verificado el 2026-07-14
+
+Controles comprobados:
+
+- WinBridgeApi escucha en loopback y Ubuntu lo consume por
+  `127.0.0.1:15000` a través del túnel SSH;
+- el ETL usa el rol PostgreSQL `sico_etl`, un DSN sin contraseña y
+  `PGPASSFILE` con modo `0600`;
+- la conexión validada fue `('sico_etl', 'dap', 'America/Lima', 5)`;
+- el recorrido integrado fue `dry-run`, sin escrituras de negocio;
+- `sico-etl.service` y `sico-etl.timer` no están registrados.
+
+Controles pendientes de aceptación:
+
+- confirmar que la cuenta SQL efectiva de WinBridgeApi carece de escritura y DDL;
+- retirar o proteger `/query`;
+- reemplazar `LocalSystem` por una cuenta Windows de privilegio mínimo;
+- revisar firewall y `pg_hba.conf`, porque PostgreSQL escucha actualmente en
+  interfaces IPv4 e IPv6 además de loopback.
 
 ## Riesgo residual aceptado
 
@@ -38,9 +60,22 @@ La aceptación debe revisarse si ocurre cualquiera de estos cambios:
 - el túnel deja de estar restringido por origen;
 - los requisitos del cliente exigen autenticación o auditoría individual.
 
+### Excepción temporal para `/query`
+
+El propietario autorizó el 2026-07-14 conservar temporalmente `GET/POST /query`
+para consultas operativas durante el despliegue. El endpoint permite cualquier
+sentencia que autorice la cuenta SQL y no interpreta de forma confiable si una
+consulta es de lectura. Por ello, la cuenta SQL de WinBridgeApi debe carecer de
+permisos de escritura y DDL; el endpoint no debe exponerse fuera del túnel ni
+considerarse parte del contrato estable del ETL.
+
 ## Secretos y configuración
 
 - Los `appsettings*.json` versionados contienen únicamente placeholders.
+- El ETL usa un DSN sin contraseña y obtiene la credencial desde
+  `/etc/sico-etl/pgpass` mediante `PGPASSFILE`; el archivo pertenece a `sico-etl`,
+  usa modo `0600` y nunca debe mostrarse, versionarse ni copiarse a backups sin
+  cifrado.
 - En producción, la cadena de conexión debe inyectarse mediante configuración
   externa, variables de entorno o un archivo protegido y no versionado.
 - La cuenta del servicio debe tener permiso de lectura solamente sobre la fuente

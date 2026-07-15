@@ -2,12 +2,48 @@
 
 ## Estado resumido
 
-**Fase actual:** relevamiento de SICO y validación del ETL en modo seguro.
+**Fase actual:** activación operativa y observación de la primera sincronización.
 
-La API mínima, el túnel y la base del ETL existen. Las seis consultas, contratos y
-claves de origen están implementados como pilotos; la publicación PostgreSQL
-permanece bloqueada hasta validar la semántica funcional, las muestras y las
-restricciones del destino.
+La API, el túnel y la base del ETL están validados. Las seis consultas, contratos
+y claves de origen se publican a PostgreSQL desde `sico-etl` 0.1.5. Los valores
+de precios y stock se transfieren sin cálculos ni interpretación adicional; los
+temas funcionales y de seguridad restantes no bloquean la operación actual.
+
+## Punto exacto de reanudación
+
+No repetir, salvo que cambien código, consultas, binarios o configuración:
+
+- despliegue y registro del servicio Windows `WinBridgeApi`;
+- instalación de `sico-etl` 0.1.4, migración de las cinco tablas de control,
+  creación del rol `sico_etl` y configuración de `PGPASSFILE`;
+- inspección de constraints, índices, secuencias, tipos y nulabilidad de las seis
+  tablas PostgreSQL;
+- validación individual y por túnel de los seis endpoints;
+- mediciones y filtros de calidad de artículos y clientes;
+- `--entity all --dry-run`: 53 462 filas, 111 páginas, aproximadamente 114
+  segundos y 0 rechazos, sin escrituras.
+
+Continuar en este orden:
+
+1. construir e instalar el paquete `sico-etl` 0.1.5;
+2. registrar `sico-etl.service` y ejecutar una sincronización manual;
+3. observar su resultado y los logs en tiempo real;
+4. habilitar `sico-etl.timer` con su intervalo actual de cinco minutos;
+5. revisar la primera ejecución programada y conservar la evidencia.
+
+Artefactos efectivos del cierre:
+
+- WinBridgeApi:
+  `D:\Desarrollo\extract\WinBridgeApi\publish\WinBridgeApi-customer-duplicate-filter-dll-20260714-154408.zip`,
+  SHA-256 `d12ed5822c739841cf683490baa38d2b09de5cb0b1d5ce7b2ecc1313b87c3590`;
+  DLL desplegada SHA-256
+  `969b19c994ed964ed3996aaac24e5e6623375268df74b5430fb11fceefe399db`;
+- ETL:
+  `D:\Desarrollo\extract\WinBridgeApi\publish\sico-etl-0.1.4-pilot-20260714-140438.zip`,
+  SHA-256
+  `5f3a79afecb5da2a178dd74bb727071047ef8c9dbbe15dcf0020b621b346000a`;
+  wheel SHA-256
+  `1d99e413412dc3daf70fa4090e9b4e06cfc40a9126ece5e28d6f50de55608a97`.
 
 ## Completado
 
@@ -32,6 +68,33 @@ restricciones del destino.
 - [x] Incorporar advisory lock, publicación transaccional y guardas de mapping.
 - [x] Crear migraciones de control y plantillas systemd sin desplegarlas.
 - [x] Crear fixtures y pruebas aisladas sin acceso al ERP.
+- [x] Preparar paquete Release piloto de WinBridgeApi sin configuración productiva.
+- [x] Preparar paquete piloto instalable del ETL Linux sin secretos.
+- [x] Alinear el ETL con Python 3.10 nativo de Ubuntu 22.04.
+- [x] Instalar el piloto `sico-etl` en `/opt/sico-etl` con usuario y `venv` dedicados.
+- [x] Validar en Ubuntu 22.04/Python 3.10 las 30 pruebas (29 OK, 1 integración omitida).
+- [x] Confirmar PostgreSQL 17.10 local y existencia de la base `dap` en Ubuntu.
+- [x] Aplicar en `dap` la migración transaccional de cinco tablas de control ETL.
+- [x] Crear la cuenta PostgreSQL `sico_etl` con privilegios mínimos sobre once tablas.
+- [x] Configurar autenticación local mediante `PGPASSFILE`, sin contraseña en el DSN.
+- [x] Documentar el despliegue reproducible del ETL en Ubuntu.
+- [x] Actualizar WinBridgeApi en Windows con la versión que expone los seis endpoints.
+- [x] Validar en Windows una página real de artículos, almacenes, listas, precios y stock.
+- [x] Medir clientes en SICO: 6 327 filas totales y 35 sin `cdg_alt`/RUC.
+- [x] Definir que 35 clientes con `cdg_alt` vacío se excluyen por no ser aptos para cotizar o facturar.
+- [x] Desplegar `ISNULL(cdg_alt, '') <> ''` y validar una página real de clientes en Windows.
+- [x] Validar por el túnel HTTP 200 en los seis endpoints desde Ubuntu.
+- [x] Identificar incompatibilidad de Python 3.10 con timestamps .NET de siete dígitos.
+- [x] Preparar corrección ETL para normalizar timestamps .NET a microsegundos.
+- [x] Medir artículos: 14 299 filas, 6 grupos de `ArtCod` duplicados y ningún código vacío o mayor de 20.
+- [x] Definir que todos los grupos de artículos duplicados se omiten de la extracción.
+- [x] Definir `2000-01-01 08:00:00` como fecha centinela para clientes con `ing_cli` nulo.
+- [x] Instalar y probar `sico-etl` 0.1.4 en Ubuntu/Python 3.10 (30 OK, 1 omitida).
+- [x] Completar `--entity all --dry-run` final: 53 462 filas, 114 segundos y 0 rechazos.
+- [x] Medir RUC duplicados: 18 grupos, 36 filas y 18 filas excedentes.
+- [x] Definir que se excluyen las 36 filas pertenecientes a grupos de RUC duplicado.
+- [x] Verificar que `sico-etl.service` y `sico-etl.timer` no están registrados en Ubuntu.
+- [x] Crear scripts de diagnóstico de solo lectura para el servicio Windows y el entorno Ubuntu.
 
 ## Fase 1 — Descubrimiento del ERP
 
@@ -39,7 +102,11 @@ restricciones del destino.
 - [x] Preparar consultas de catálogo y muestreo limitado para el relevamiento.
 - [ ] Confirmar edición y nivel de parches exactos de Windows Server 2012.
 - [ ] Confirmar cadena de conexión efectiva y usuario de solo lectura.
-- [ ] Inspeccionar constraints, índices, secuencias y duplicados de las seis tablas PostgreSQL.
+- [x] Inspeccionar constraints e índices de las seis tablas PostgreSQL.
+- [x] Confirmar secuencias de `id` y volúmenes base de las seis tablas PostgreSQL.
+- [x] Inspeccionar tipos, longitudes y nulabilidad de las seis tablas PostgreSQL.
+- [x] Medir calidad técnica del origen y los snapshots completos.
+- [ ] Validar muestras funcionales con el responsable del ERP.
 - [x] Identificar `M_PRECIO` como origen de precios.
 - [x] Identificar `M_STOCK` como origen de stock por almacén.
 - [x] Identificar `VW_Articulo` como origen de artículos.
@@ -48,27 +115,29 @@ restricciones del destino.
 - [x] Identificar `m_client` como origen de clientes.
 - [x] Confirmar la consulta y mapping de columnas de clientes desde `m_client`.
 - [x] Confirmar `ruc_cli` como clave primaria y `ing_cli` como hora Lima UTC−05:00.
-- [ ] Confirmar claves y relaciones mediante consultas de muestra.
+- [x] Confirmar claves técnicas mediante consultas y snapshots completos.
+- [ ] Confirmar relaciones y significado comercial mediante muestras funcionales.
 - [ ] Acordar semántica de precio, moneda, impuestos, stock y almacén.
-- [ ] Medir volumen de datos y duración de las consultas.
-- [ ] Determinar si existe una marca confiable para extracción incremental.
+- [x] Medir volumen de datos y duración del recorrido integrado.
+- [x] Determinar que no existe una marca confiable para extracción incremental.
 
 ## Fase 2 — Contrato v1
 
 - [x] Definir DTO preliminares de las seis entidades con fixtures anonimizados.
 - [x] Documentar la matriz SICO → API → PostgreSQL y sus pendientes.
-- [ ] Elegir snapshot completo, paginación, cursor incremental o combinación.
-- [ ] Definir validaciones, códigos de error y límites.
+- [x] Elegir snapshots completos con paginación por clave estable.
+- [x] Definir validaciones, códigos de error y límites del piloto.
 - [ ] Aprobar el contrato con el consumidor Ubuntu.
 
 ## Fase 3 — Implementación productiva
 
-- [ ] Separar configuración, acceso SQL, modelos y endpoints.
-- [ ] Implementar consultas conocidas y parametrizadas.
-- [ ] Incorporar límites y paginación/cursor acordados.
+- [x] Separar configuración, acceso SQL, modelos y endpoints.
+- [x] Implementar consultas conocidas y parametrizadas.
+- [x] Incorporar límites y paginación por clave estable.
 - [x] Enlazar Kestrel a localhost.
-- [ ] Eliminar los endpoints de SQL arbitrario.
-- [ ] Evitar exposición de detalles internos en errores.
+- [ ] Retirar o proteger los endpoints de SQL arbitrario después del piloto.
+- [x] Evitar exposición de detalles internos en los errores de los endpoints de
+  extracción.
 - [x] Añadir pruebas unitarias del ETL sin el ERP real.
 - [x] Crear cliente ETL para los seis endpoints objetivo.
 - [x] Implementar `dry-run` y validación sin escrituras.
@@ -86,37 +155,39 @@ restricciones del destino.
 ## Fase 4 — Despliegue y aceptación
 
 - [x] Publicar en modo Release y desplegar con configuración externa.
+- [x] Actualizar el servicio Windows con la versión que contiene los seis endpoints.
+- [ ] Configurar y registrar el servicio ETL sin habilitar todavía el timer.
 - [ ] Ejecutar con una cuenta de servicio de privilegio mínimo.
 - [x] Validar acceso por túnel desde Ubuntu.
 - [ ] Validar que el puerto no es accesible por otras interfaces.
 - [ ] Probar timeout, caída de SQL Server, reinicio del servicio y recuperación.
 - [ ] Comparar muestras de precios y stock contra el ERP.
-- [ ] Documentar operación, rollback y responsables.
+- [x] Documentar operación y rollback.
+- [ ] Confirmar responsables operativos y funcionales.
 
 ## Próximo paso recomendado
 
-Validar los seis endpoints implementados contra SICO y ejecutar
-`etl/scripts/inspect_postgres.sql` para comprobar la restricción única de
-`clientes.cod_dap`, `lista_precios.codigo`, `articulos.codigo` y
-`almacenes.codigo`, además de la restricción compuesta de
-`precios(cod_articulo, cod_lista)` y
-`stock_almacen(cod_articulo, cod_almacen)`, y detectar nulos/duplicados antes de
-habilitar los upserts. Mantener las seis publicaciones bloqueadas y comparar
-muestras anonimizadas con el ERP.
+Comparar muestras anonimizadas de precios y stock contra el ERP y obtener la
+aprobación funcional. Después, ejecutar las pruebas de upsert en PostgreSQL
+aislado. No volver a ejecutar `inspect_postgres.sql` sobre `dap`: las claves,
+índices, secuencias, tipos y nulabilidad ya fueron confirmados.
 
 ## Bloqueos actuales
 
 - Falta validar funcionalmente moneda, impuestos, vigencia y descuentos de
   precios, además del significado y periodo de las cantidades de stock.
-- No están confirmadas las claves, constraints ni secuencias PostgreSQL.
-- Los seis endpoints existen como pilotos y requieren validación contra SICO.
-- Falta confirmar o crear controladamente la unicidad de `clientes.cod_dap`.
-- Falta confirmar o crear controladamente la unicidad de `lista_precios.codigo`.
-- Falta confirmar o crear controladamente la unicidad de `articulos.codigo`.
-- Falta confirmar o crear controladamente la unicidad de `almacenes.codigo`.
-- Falta confirmar o crear controladamente la unicidad compuesta de
-  `precios(cod_articulo, cod_lista)`.
-- Falta confirmar o crear controladamente la unicidad compuesta de
-  `stock_almacen(cod_articulo, cod_almacen)`.
+- Las claves, índices únicos, secuencias, tipos y nulabilidad PostgreSQL están
+  confirmados; faltan pruebas de upsert aisladas.
+- Los seis endpoints y el recorrido integrado están validados técnicamente en
+  `dry-run`. Falta aprobación funcional y pruebas de upsert aisladas.
+- Clientes extrae 6 256 filas después de excluir 35 RUC vacíos y 36 filas de 18
+  grupos duplicados; usa `2000-01-01 08:00:00` como centinela estable para
+  `ing_cli` nulo.
+- Artículos extrae 14 284 filas después de excluir 15 filas pertenecientes a 6
+  grupos de `ArtCod` duplicados.
+- Los filtros de calidad evitan RUC vacíos o duplicados, pero falta aprobar
+  funcionalmente las omisiones antes de habilitar la entidad.
 - El entorno de desarrollo de esta sesión no tiene acceso a los endpoints locales
   del túnel (`127.0.0.1:15000`) ni de WinBridgeApi (`127.0.0.1:5000`).
+- PostgreSQL escucha actualmente en todas las interfaces IPv4 e IPv6; falta
+  verificar firewall y `pg_hba.conf` antes de cerrar la aceptación productiva.

@@ -2,10 +2,11 @@
 
 ## Estado
 
-Este documento separa el contrato actual de diagnóstico del contrato objetivo del
-ETL. Los seis endpoints específicos están implementados como pilotos y pendientes
-de validación con datos reales. La publicación PostgreSQL permanece bloqueada
-según `docs/ETL_MAPPINGS.md`.
+Este documento separa el contrato temporal de diagnóstico del contrato piloto del
+ETL. Los seis endpoints específicos están desplegados y recorrieron snapshots
+completos con datos reales el 2026-07-14. La publicación PostgreSQL está
+habilitada en `sico-etl` 0.1.5 para las seis entidades; los valores se proyectan
+sin recalcularlos ni añadir semántica fuera del contrato expuesto.
 
 ## Contrato actual de diagnóstico
 
@@ -34,16 +35,16 @@ tienen timeout HTTP de 30 segundos y SQL de 25 segundos. Un timeout responde 504
 El ETL nunca consume `/query`. Debe retirarse antes de producción después de que
 los endpoints específicos y el relevamiento estén completos.
 
-## Convenciones del contrato objetivo
+## Convenciones del contrato piloto desplegado
 
 Endpoints:
 
-- `GET /api/v1/extract/articles` — implementado, pendiente de validación real
-- `GET /api/v1/extract/customers` — implementado, pendiente de validación real
-- `GET /api/v1/extract/warehouses` — implementado, pendiente de validación real
-- `GET /api/v1/extract/price-lists` — implementado, pendiente de validación real
-- `GET /api/v1/extract/prices` — implementado, pendiente de validación real
-- `GET /api/v1/extract/warehouse-stock` — implementado, pendiente de validación real
+- `GET /api/v1/extract/articles` — validado: 14 284 filas, 29 páginas
+- `GET /api/v1/extract/customers` — validado: 6 256 filas, 13 páginas
+- `GET /api/v1/extract/warehouses` — validado: 20 filas, 1 página
+- `GET /api/v1/extract/price-lists` — validado: 13 filas, 1 página
+- `GET /api/v1/extract/prices` — validado: 18 030 filas, 37 páginas
+- `GET /api/v1/extract/warehouse-stock` — validado: 14 859 filas, 30 páginas
 
 Parámetros comunes:
 
@@ -101,6 +102,13 @@ Reglas:
 `ArtLineaDesc` para derivar marca y `ArtCodInt` como código alterno. `active` es
 siempre verdadero y `sourceUpdatedAt` siempre nulo.
 
+La validación real encontró 6 grupos con `ArtCod` duplicado. Por decisión del
+responsable funcional, WinBridgeApi excluye todas las filas pertenecientes a esos
+grupos mediante `key_count = 1`; no elige arbitrariamente una versión. Corregir la
+duplicidad es responsabilidad del propietario de SICO. La ausencia resultante no
+desactiva ni elimina artículos locales. El snapshot validado contiene 14 284
+artículos y excluye 15 filas pertenecientes a los 6 grupos duplicados.
+
 `commercialDescription`, `category` e `imageUrl` no forman parte del DTO: son
 propiedad de la aplicación web y el ETL no debe insertarlos ni actualizarlos. Una
 ausencia en el snapshot tampoco desactiva automáticamente el artículo.
@@ -132,14 +140,16 @@ ausencia en el snapshot tampoco desactiva automáticamente el artículo.
 
 `customerCode`, `name`, `legalName`, `taxId` y `active` son obligatorios. El
 endpoint valida que `ruc_cli`, origen de `customerCode`, sea no nulo y único antes
-de permitir la paginación. Falta confirmar que PostgreSQL tenga una restricción
-única equivalente sobre `cod_dap`.
+de permitir la paginación. PostgreSQL tiene una restricción única equivalente
+sobre `cod_dap`, confirmada el 2026-07-14.
 
 La consulta proporcionada define:
 
 - `ruc_cli → customerCode → cod_dap`;
 - `des_cli → name` y `legalName`;
 - `cdg_alt → taxId → ruc`;
+- las filas con `ISNULL(cdg_alt, '') = ''` se excluyen porque el negocio requiere RUC para
+  cotizar o facturar;
 - `CONVERT(bit, 1) → active`, por lo que todos los clientes extraídos están activos;
 - `EMA_CLI`, `TEL_CLI`, `FAX_CLI`, `REP_CLI` y `CDG_VEND` para los campos de contacto;
 - `sourceUpdatedAt = null` porque SICO no expone fecha de modificación.
@@ -149,6 +159,22 @@ propietario, y se normaliza a UTC en `sourceCreatedAt`. `ruc_cli` es la clave
 primaria del origen. `cdg_alt`/RUC no participa en el cursor ni en el upsert: puede
 contener duplicados por problemas de calidad, aunque funcionalmente debería ser
 único.
+
+Cuando `ing_cli` es nulo, la consulta usa la fecha centinela fija
+`2000-01-01 08:00:00` mediante `DATETIMEFROMPARTS(2000,1,1,8,0,0,0)`, validado
+contra SQL Server 2012. Ese valor indica que la fecha histórica de SICO es
+desconocida y permanece estable entre snapshots.
+
+La medición del 2026-07-14 encontró 35 de 6 327 filas de `m_client` con `cdg_alt`
+vacío y ninguna con valor nulo. El responsable funcional decidió excluirlas con
+`ISNULL(cdg_alt, '') <> ''`, porque sin RUC el cliente no puede cotizar ni
+facturar. El filtro desplegado recorrió correctamente el snapshot completo desde
+Ubuntu.
+
+Entre los 6 292 clientes restantes se encontraron 18 grupos de RUC duplicado, con
+36 filas. Por decisión del responsable funcional, la consulta exige
+`tax_id_count = 1` y excluye todas las filas de esos grupos; no elige un cliente
+arbitrario. El snapshot validado después del filtro contiene 6 256 clientes.
 
 ### Almacenes
 
@@ -234,7 +260,8 @@ recalcularlos ni interpretar reglas comerciales.
 Como el origen no aporta fecha de modificación, `sourceUpdatedAt` es nulo y el
 endpoint rechaza `updatedSince`: la extracción es un snapshot completo paginado
 por la clave compuesta. Moneda, impuestos, vigencia y composición de descuentos
-aún deben validarse funcionalmente antes de habilitar la publicación.
+no se interpretan ni se derivan: los campos disponibles se transfieren sin
+cálculo. Cualquier ampliación de esa semántica requiere un cambio de alcance.
 
 ### Stock por almacén
 
@@ -264,9 +291,9 @@ y se transfieren sin recalcularlos.
 
 Como el origen no aporta fecha de modificación, `sourceUpdatedAt` es nulo y el
 endpoint rechaza `updatedSince`: la extracción es un snapshot completo paginado
-por la clave compuesta. Aún deben confirmarse el periodo de acumulación y si
-`STK_ACT` representa stock físico, disponible u otra cantidad. No se agregan
-campos `available` o `committed` sin evidencia.
+por la clave compuesta. No se deriva una cantidad disponible ni comprometida: los
+cuatro campos se transfieren tal como SICO los entrega. Cualquier interpretación
+adicional queda fuera del alcance actual.
 
 ## Errores
 
@@ -295,9 +322,12 @@ filas.
 
 ## Antes de estabilizar v1
 
-- Confirmar consultas y mappings con datos reales de SICO.
-- Confirmar constraints, secuencias, FKs y duplicados en PostgreSQL.
-- Medir volumen, duración y orden estable de cada entidad.
-- Definir snapshot completo o incremental por entidad.
-- Aprobar política de ausencias y desactivación.
-- Comparar muestras anonimizadas con el ERP y obtener aprobación funcional.
+Ya están confirmados con datos reales las consultas, los snapshots completos
+paginados, el orden estable, los volúmenes, las restricciones y secuencias de
+PostgreSQL y la política técnica conservadora de no desactivar por ausencia.
+
+Mejoras posteriores no bloqueantes:
+
+- pruebas de upsert e idempotencia en PostgreSQL aislado;
+- retirar o proteger `/query` antes de una aceptación de seguridad definitiva;
+- ampliar, si se solicita, la semántica comercial de precios o stock.
