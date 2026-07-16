@@ -19,27 +19,32 @@ sico-etl -> http://127.0.0.1:15000 -> túnel SSH -> WinBridgeApi -> SICO
          -> PostgreSQL 127.0.0.1:5432/dap
 ```
 
-## Estado validado el 2026-07-14
+## Estado validado al 2026-07-15
 
 | Componente | Estado comprobado |
 |---|---|
 | Sistema operativo | Ubuntu 22.04.5 LTS, x86_64 |
 | Python | 3.10.12 del sistema, usado dentro de un `venv` |
 | PostgreSQL | 17.10, base `dap` local |
-| ETL instalado | `sico-etl` 0.1.4 en `/opt/sico-etl`; actualización operativa a 0.1.5 pendiente |
+| ETL instalado | `sico-etl` 0.1.5 en `/opt/sico-etl` |
 | Usuario Linux | `sico-etl`, sin uso interactivo |
 | Usuario PostgreSQL | `sico_etl`, `LOGIN`, límite de 2 conexiones |
 | WinBridgeApi | `/health` responde por `127.0.0.1:15000` |
 | Endpoints ETL | Seis snapshots completos validados desde Ubuntu mediante el túnel |
 | Tablas de control | Cinco tablas creadas en `public` |
 | Pruebas Python | 31 ejecutadas: 30 OK y 1 integración omitida |
-| Servicio/timer ETL | No registrados ni habilitados todavía |
+| Orquestación ETL | Servicio `oneshot` registrado; timer habilitado y operativo; snapshots programados exitosos |
 
 La versión Windows con los seis endpoints fue desplegada el 2026-07-14 y los seis
-snapshots completos se validaron desde Ubuntu. `sico-etl` 0.1.5 habilita la
-publicación hacia las tablas de negocio sin transformar semánticamente precios ni
-stock. Tras instalarla, registrar el servicio, observar una ejecución manual y
-habilitar el timer de cinco minutos.
+snapshots completos se validaron desde Ubuntu. `sico-etl` 0.1.5 publica hacia las
+tablas de negocio sin transformar semánticamente precios ni stock; su servicio y
+timer de cinco minutos están habilitados en producción.
+
+La evidencia de producción del 2026-07-15 confirmó ejecuciones consecutivas
+exitosas. La última observada recorrió 53 469 filas en 111 páginas y finalizó en
+aproximadamente 153 segundos: 20 almacenes, 13 listas, 14 289 artículos, 6 256
+clientes, 18 032 precios y 14 859 stocks. No hubo rechazos ni cambios que aplicar
+en PostgreSQL.
 
 El primer `dry-run` completo con 0.1.3 se detuvo sin publicar porque Python 3.10
 no aceptó la precisión de siete dígitos de `extractedAt` emitida por .NET. La
@@ -71,7 +76,8 @@ aproximadamente 114 segundos, sin rechazos ni escrituras:
 | Precios | 18 030 | 37 |
 | Stock por almacén | 14 859 | 30 |
 
-Artefactos de esta instalación:
+Los siguientes son artefactos de la instalación piloto inicial 0.1.4
+(2026-07-14), no de la versión productiva actual:
 
 - paquete `/home/sico-etl-0.1.4-pilot-20260714-140438.zip`, SHA-256
   `5f3a79afecb5da2a178dd74bb727071047ef8c9dbbe15dcf0020b621b346000a`;
@@ -79,6 +85,15 @@ Artefactos de esta instalación:
   `1d99e413412dc3daf70fa4090e9b4e06cfc40a9126ece5e28d6f50de55608a97`;
 - respaldo `/root/sico-etl-backups/sico-etl-0.1.3-files-20260714-141230.tar.gz`,
   SHA-256 `43d4ff3a5fefc252fb78690ad22ce5e4f805c924e9f95e8ad86a76a74a89232a`.
+
+El nombre y las sumas SHA-256 del paquete y wheel efectivos de 0.1.5 no fueron
+conservados en esta guía. Antes de actualizar o ejecutar un rollback, obtenerlos
+del artefacto aprobado y registrarlos junto con su ubicación segura.
+
+Las secciones 1 a 12 que siguen conservan el procedimiento histórico de
+instalación inicial 0.1.4. No deben usarse para reinstalar producción con esos
+nombres de paquete; para una actualización usar la sección 14 una vez que el
+artefacto 0.1.5 o posterior haya sido identificado y verificado.
 
 ## 1. Comprobar prerrequisitos
 
@@ -652,10 +667,11 @@ Resultado validado:
 ('sico_etl', 'dap', 'America/Lima', 5)
 ```
 
-## 13. Validaciones pendientes antes de registrar `systemd`
+## 13. Validaciones históricas antes de registrar `systemd`
 
-No registrar ni iniciar todavía las unidades mientras los mappings continúen
-bloqueados.
+Esta sección describe las validaciones realizadas antes del despliegue de 0.1.5.
+Las unidades ya están registradas y el timer se encuentra habilitado; no ejecutar
+estos pasos como si fueran una instrucción de desactivar la operación actual.
 
 Si WinBridgeApi vuelve a actualizarse, comprobar primero desde Ubuntu:
 
@@ -694,12 +710,10 @@ El script solo informa estado de unidades, listeners, `/health`, versión del
 paquete y presencia/permisos de la configuración. No inicia ni detiene servicios,
 no escribe en PostgreSQL y no muestra secretos.
 
-Después de instalar 0.1.5:
-
-1. registrar `sico-etl.service` y `sico-etl.timer`;
-2. iniciar manualmente el servicio sin bloquear y observar `journalctl`;
-3. comprobar que finalice satisfactoriamente;
-4. habilitar el timer de cinco minutos y observar su primera ejecución.
+El despliegue de 0.1.5 ya completó el registro del servicio y timer, la ejecución
+manual inicial y la habilitación del timer de cinco minutos. Para una comprobación
+operativa posterior, ejecutar `validate_ubuntu.sh` y revisar el journal sin
+iniciar una ejecución manual en paralelo.
 
 La unidad de servicio ejecuta escrituras reales, no `--dry-run`.
 
@@ -732,9 +746,16 @@ del paquete.
 Cuando el servicio esté finalmente habilitado:
 
 ```bash
+bash /opt/sico-etl/scripts/validate_ubuntu.sh
 systemctl status sico-etl.timer sico-etl.service --no-pager
 journalctl -u sico-etl.service -n 100 --no-pager
 ```
+
+El script debe ejecutarse como `root` y no cambia servicios, archivos ni datos.
+Valida que la versión esperada (por defecto `0.1.5`), el túnel, las unidades
+`systemd`, la configuración y la última sincronización registrada sean
+coherentes. Para una versión aprobada posterior, ejecutar con
+`EXPECTED_ETL_VERSION=x.y.z`.
 
 El rollback operativo inicial consiste en deshabilitar el timer, sin eliminar
 datos ni credenciales:

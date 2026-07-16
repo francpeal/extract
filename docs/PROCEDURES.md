@@ -369,19 +369,20 @@ un plan de rollback; no debe improvisarse durante una migración urgente.
 - En una ventana de mantenimiento: reiniciar ambos servidores y confirmar que los
   servicios se recuperan sin intervención manual.
 
-## Operación futura del ETL
+## Operación actual del ETL
 
 La base del sincronizador y las plantillas systemd se documentan en
-[`etl/README.md`](../etl/README.md). Al cierre de la validación técnica del
-2026-07-14, `sico-etl` 0.1.4, las migraciones de control, el rol de privilegio
-mínimo y el `dry-run` integrado están validados. La actualización 0.1.5 habilita
-la publicación de las seis entidades.
+[`etl/README.md`](../etl/README.md). Tras el despliegue del 2026-07-14,
+`sico-etl` 0.1.5, las migraciones de control, el rol de privilegio mínimo y la
+publicación de las seis entidades están operativos.
+
+El 2026-07-15 se verificaron snapshots programados exitosos cada cinco minutos.
+La última ejecución observada completó 53 469 filas en 111 páginas en unos 153
+segundos, sin rechazos ni cambios por aplicar.
 
 La secuencia operativa es:
 
-1. instalar el wheel 0.1.5;
-2. registrar `sico-etl.service` y realizar una ejecución manual;
-3. observar `journalctl` y la salida de la ejecución;
-4. registrar y habilitar `sico-etl.timer` con el intervalo actual de cinco
-   minutos;
-5. revisar una ejecución automática antes de cambiar frecuencia o controles.
+1. ejecutar `bash /opt/sico-etl/scripts/validate_ubuntu.sh` como `root`;
+2. comprobar el estado de `sico-etl.service` y `sico-etl.timer`;
+3. revisar `journalctl` y la evidencia de la última ejecución;
+4. investigar cualquier fallo antes de cambiar frecuencia o controles.

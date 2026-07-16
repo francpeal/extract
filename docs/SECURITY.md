@@ -24,7 +24,7 @@ o el análisis de riesgo lo exige.
 - No registrar contraseñas, cadenas de conexión ni conjuntos de datos completos.
 - Ejecutar el servicio Windows con el mínimo privilegio viable.
 
-## Estado verificado el 2026-07-14
+## Estado verificado al 2026-07-15
 
 Controles comprobados:
 
@@ -33,8 +33,12 @@ Controles comprobados:
 - el ETL usa el rol PostgreSQL `sico_etl`, un DSN sin contraseña y
   `PGPASSFILE` con modo `0600`;
 - la conexión validada fue `('sico_etl', 'dap', 'America/Lima', 5)`;
-- el recorrido integrado fue `dry-run`, sin escrituras de negocio;
-- `sico-etl.service` y `sico-etl.timer` no están registrados.
+- el recorrido integrado inicial fue `dry-run`, sin escrituras de negocio;
+- `sico-etl.service` está registrado como unidad `oneshot`; `sico-etl.timer` está
+  activo y habilitado, e invoca la publicación productiva.
+- el 2026-07-15 se observaron ejecuciones `snapshot` exitosas de `sico-etl`
+  0.1.5; las seis entidades totalizaron 53 469 filas en 111 páginas, sin
+  rechazos.
 
 Controles pendientes de aceptación:
 

@@ -21,8 +21,8 @@ Antes de modificar el proyecto, leer en este orden:
 8. [Procedimientos operativos y migración](docs/PROCEDURES.md)
 9. [Matriz de mappings del ETL](docs/ETL_MAPPINGS.md)
 
-Para continuar la fase actual de descubrimiento, usar el
-[procedimiento de relevamiento del ERP](docs/ERP_DISCOVERY.md).
+Para continuar los pendientes funcionales de descubrimiento y aceptación, usar
+el [procedimiento de relevamiento del ERP](docs/ERP_DISCOVERY.md).
 
 Las instrucciones de despliegue actuales están en
 [WinBridgeApi/DEPLOY.md](WinBridgeApi/DEPLOY.md).
@@ -35,9 +35,11 @@ El procedimiento reproducible de instalación, permisos y credenciales está en
 ## Estado actual
 
 WinBridgeApi está desplegado como servicio Windows y los seis endpoints recorren
-snapshots completos a través del túnel. `sico-etl` 0.1.5 habilita la publicación
-idempotente de las seis entidades a PostgreSQL. La operación inicia de forma
-manual y se observa en tiempo real antes de habilitar su timer.
+snapshots completos a través del túnel. `sico-etl` 0.1.5 publica de forma
+idempotente las seis entidades a PostgreSQL mediante un servicio `oneshot`
+registrado, invocado por un timer `systemd` habilitado. La evidencia productiva del 2026-07-15 confirma
+sincronizaciones `snapshot` exitosas cada cinco minutos, con 53 469 filas en 111
+páginas, sin rechazos ni cambios pendientes de aplicar.
 
 Las restricciones y claves naturales de PostgreSQL están confirmadas. Precios y
 stock se transfieren tal como los expone SICO: no se agregan ni se interpretan

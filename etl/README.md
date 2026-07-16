@@ -11,6 +11,12 @@ rechazos ni escrituras. Las restricciones naturales de PostgreSQL están
 confirmadas. Los datos de precios y stock se transfieren tal como están expuestos
 por WinBridgeApi, sin interpretar ni derivar información adicional.
 
+La operación productiva fue confirmada el 2026-07-15. El timer de cinco minutos
+ejecutó snapshots exitosos de 53 469 filas en 111 páginas: 20 almacenes, 13
+listas, 14 289 artículos, 6 256 clientes, 18 032 precios y 14 859 stocks. No hubo
+rechazos; en la última ejecución observada las filas ya estaban alineadas y no
+requirieron inserciones ni actualizaciones.
+
 Los seis endpoints específicos y sus snapshots completos están validados
 técnicamente. `/query` no es consumido por este proyecto.
 
@@ -107,17 +113,24 @@ El procedimiento completo y validado, incluidos usuario Linux, rol PostgreSQL,
 permisos, claves, índices y `PGPASSFILE`, está en
 [`DEPLOY_UBUNTU.md`](DEPLOY_UBUNTU.md).
 
-Los archivos de `deploy/systemd/` se instalan después de actualizar a 0.1.5. La
-primera ejecución se inicia manualmente y se observa mediante `journalctl`; luego
-se habilita el timer de cinco minutos configurado para esta fase operativa. El
-umbral de reducción predeterminado es 0%: cualquier snapshot menor se bloquea.
+Los archivos de `deploy/systemd/` están instalados para `sico-etl` 0.1.5 y el
+timer de cinco minutos está habilitado en producción. El umbral de reducción
+predeterminado es 0%: cualquier snapshot menor se bloquea.
 
 Diagnóstico previsto:
 
 ```bash
+sudo bash /opt/sico-etl/scripts/validate_ubuntu.sh
 systemctl status sico-etl.timer sico-etl.service --no-pager
 journalctl -u sico-etl.service -n 100 --no-pager
 ```
+
+`validate_ubuntu.sh` es de solo lectura. Exige que el túnel y el timer estén
+activos y habilitados, y que el servicio `oneshot` esté registrado y haya
+finalizado correctamente en su última ejecución. Comprueba la versión esperada
+(por defecto, `0.1.5`), la configuración no secreta, el acceso a `/health` y los
+metadatos de la última sincronización. Para validar otra versión aprobada, usar
+`EXPECTED_ETL_VERSION=x.y.z`.
 
 El rollback consiste en deshabilitar el timer. Una extracción fallida no debe
 reemplazar el último conjunto válido.

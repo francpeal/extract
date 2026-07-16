@@ -4,16 +4,23 @@
 
 Esta matriz define el contrato piloto y registra explícitamente lo que todavía
 debe aprobarse. Los orígenes, claves, snapshots completos y restricciones
-naturales de PostgreSQL se comprobaron el 2026-07-14. La escritura permanece
-bloqueada hasta comparar muestras funcionales y probar los upserts en PostgreSQL
-aislado.
+naturales de PostgreSQL se comprobaron el 2026-07-14. La publicación estuvo
+bloqueada hasta completar esas validaciones técnicas y quedó habilitada en
+producción con `sico-etl` 0.1.5; la comparación funcional y la prueba aislada de
+upsert permanecen como mejoras no bloqueantes.
 
 Las columnas PostgreSQL proceden de las capturas entregadas. Las claves naturales
 están respaldadas por índices únicos observados en la base `dap`. Desde 0.1.5 los
 seis mappings están habilitados para publicación; precios y stock se transfieren
 sin cálculo ni interpretación adicional.
 
-## Resumen por entidad
+La operación productiva del 2026-07-15 recorrió 53 469 filas en 111 páginas sin
+rechazos: 20 almacenes, 13 listas, 14 289 artículos, 6 256 clientes, 18 032
+precios y 14 859 stocks. Estos son conteos observados de un snapshot, no nuevos
+límites contractuales; las cifras históricas de la matriz se conservan como
+evidencia de la validación inicial.
+
+## Resumen por entidad — validación inicial del 2026-07-14
 
 | Entidad | Endpoint objetivo | Tabla PostgreSQL | Clave candidata | Estado |
 |---|---|---|---|---|

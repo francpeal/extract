@@ -29,12 +29,14 @@ cambia, se marca como sustituida y se referencia la nueva.
 
 ## ADR-003 — API específica, no SQL remoto genérico
 
-- **Estado:** aceptada
+- **Estado:** aceptada con excepción temporal ADR-013
 - **Fecha:** 2026-07-13
 - **Contexto:** `/query` permitió demostrar conectividad, pero entrega al consumidor
   control total sobre el SQL autorizado por la cuenta de base de datos.
 - **Decisión:** Mantener `/query` solo durante exploración controlada y reemplazarlo
-  por endpoints versionados de precios y stock antes de producción.
+  por endpoints versionados de precios y stock antes de la aceptación de seguridad
+  definitiva. ADR-013 autoriza una excepción temporal durante la operación
+  productiva controlada.
 - **Consecuencias:** La API deberá mapear el esquema ERP a DTO propios, pero el
   contrato será estable, auditable y de solo lectura.
 

@@ -8,6 +8,11 @@ completos con datos reales el 2026-07-14. La publicación PostgreSQL está
 habilitada en `sico-etl` 0.1.5 para las seis entidades; los valores se proyectan
 sin recalcularlos ni añadir semántica fuera del contrato expuesto.
 
+La operación productiva del 2026-07-15 confirmó una sincronización completa
+exitosa por el mismo contrato: 53 469 filas en 111 páginas, sin rechazos. Los
+conteos por recurso pueden variar entre snapshots; los listados de validación que
+siguen corresponden a la medición técnica del 2026-07-14.
+
 ## Contrato actual de diagnóstico
 
 ### `GET /health`
@@ -32,8 +37,9 @@ recibido del cliente y no forman parte del contrato productivo.
 `boolean` o `null`). Objetos y arreglos se rechazan con HTTP 400. Ambos endpoints
 tienen timeout HTTP de 30 segundos y SQL de 25 segundos. Un timeout responde 504.
 
-El ETL nunca consume `/query`. Debe retirarse antes de producción después de que
-los endpoints específicos y el relevamiento estén completos.
+El ETL nunca consume `/query`. Debe retirarse o protegerse explícitamente antes
+de cerrar la aceptación de seguridad definitiva. Su excepción temporal durante la
+operación productiva controlada se documenta en `docs/SECURITY.md` y ADR-013.
 
 ## Convenciones del contrato piloto desplegado
 

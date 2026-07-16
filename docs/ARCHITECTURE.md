@@ -81,9 +81,9 @@ Aplicación web (Ubuntu) ---> PostgreSQL (proyección local)
 | Salud | Confirma que el proceso vive | Salud básica y diagnóstico separado de BD |
 | Servicio | `WindowsServiceLifetime`, ejecutado como `LocalSystem` | Cuenta de servicio con privilegios mínimos |
 | Transporte | HTTP plano | HTTP exclusivamente dentro de SSH |
-| Persistencia Ubuntu | ETL 0.1.4 instalado; tablas de control creadas | ETL Linux hacia PostgreSQL |
-| Orquestación | CLI manual; servicio y timer no registrados | Servicio y timer systemd dedicado |
-| Escritura ETL | Habilitada para las seis entidades en 0.1.5 | Upsert transaccional observado y programado |
+| Persistencia Ubuntu | ETL 0.1.5 publica las seis entidades hacia PostgreSQL | Proyección local supervisada |
+| Orquestación | Servicio `oneshot` registrado; timer `systemd` habilitado | Monitoreo operativo periódico |
+| Escritura ETL | Habilitada para las seis entidades en 0.1.5 | Upsert transaccional operativo |
 
 ## Flujo principal
 
